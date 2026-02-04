@@ -24,7 +24,6 @@ public class GridManager : MonoBehaviour
         float totalWidth = width * cellSize;
         float totalHeight = height * cellSize;
 
-        // Plane中心から半分ずらして左下を作る
         origin = gridCenter.position
                - new Vector3(totalWidth * 0.5f, 0f, totalHeight * 0.5f);
     }
@@ -45,9 +44,45 @@ public class GridManager : MonoBehaviour
 
         return origin + new Vector3(x, 0f, z);
     }
+    public Vector3 CellToWorldEdge(Vector2Int cell, Vector2Int dir)
+    {
+        Vector3 center = CellToWorldCenter(cell);
+        Vector3 offset = new Vector3(
+            dir.x * cellSize * 0.5f,
+            0f,
+            dir.y * cellSize * 0.5f
+        );
+
+        return center + offset;
+    }
     public bool IsInside(Vector2Int cell)
     {
         return cell.x >= 0 && cell.x < width &&
                cell.y >= 0 && cell.y < height;
+    }
+    public bool CanPlaceAt(Vector2Int cell)
+    {
+        // 外は念のため
+        if (!IsInside(cell)) return false;
+
+        // 禁止マス
+        if (IsForbidden(cell)) return false;
+
+        // すでに壁
+        if (HasWall(cell)) return false;
+
+        return true;
+    }
+
+    public bool HasWall(Vector2Int cell)
+    {
+        // TODO: あなたの壁データに合わせる
+        return false;
+    }
+
+    public bool IsForbidden(Vector2Int cell)
+    {
+        // TODO: 禁止マスのルールに合わせる（例: スポーン地点、ゴール、固定床 etc）
+        return false;
     }
 }

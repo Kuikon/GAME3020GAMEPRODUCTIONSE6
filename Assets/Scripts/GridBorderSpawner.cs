@@ -10,10 +10,10 @@ public class GridBorderSpawner : MonoBehaviour
     [SerializeField] private GameObject borderWallPrefab;
 
     [Header("Border Settings")]
-    [SerializeField] private int borderThickness = 1; // 1=äOé¸1É}ÉX
+    [SerializeField] private int borderThickness = 1; 
 
     [Header("Spawn Height")]
-    [SerializeField] private float spawnYOffset = 0.02f; // ÅöPlaneÇÊÇËè≠Çµè„
+    [SerializeField] private float spawnYOffset;
 
     private void Start()
     {
@@ -59,7 +59,7 @@ public class GridBorderSpawner : MonoBehaviour
             return;
 
         Vector3 pos = gridManager.CellToWorldCenter(cell);
-        pos.y += spawnYOffset; // ÅöÇ±Ç±Ç≈è≠Çµè„Ç…Ç∑ÇÈ
+        pos.y += spawnYOffset; 
 
         GameObject obj = Instantiate(borderWallPrefab, pos, Quaternion.identity);
         obj.name = $"Border_{cell.x}_{cell.y}";

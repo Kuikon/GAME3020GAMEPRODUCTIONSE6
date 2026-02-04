@@ -40,8 +40,6 @@ public class GridPointer : MonoBehaviour
         hitWorldPos = ray.GetPoint(enter);
         cell = gridManager.WorldToCell(hitWorldPos);
 
-        // if (!gridManager.IsInside(cell)) return false;
-
         return true;
     }
 }

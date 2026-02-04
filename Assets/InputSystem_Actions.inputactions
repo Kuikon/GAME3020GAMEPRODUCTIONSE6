@@ -1156,7 +1156,7 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "ToggleMode",
+                    "name": "ToggleGameMode",
                     "type": "Button",
                     "id": "05e7f7d6-74af-4ee2-be85-a9604f9febd6",
                     "expectedControlType": "",
@@ -1208,6 +1208,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleBuildMode",
+                    "type": "Button",
+                    "id": "1e7ad151-91ec-4472-b319-0a3e6a3e8322",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -1251,7 +1260,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "",
-                    "action": "ToggleMode",
+                    "action": "ToggleGameMode",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -1351,6 +1360,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Boost",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b39d3746-3ab2-4356-b14a-29957e90cc15",
+                    "path": "<Mouse>/middleButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleBuildMode",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
