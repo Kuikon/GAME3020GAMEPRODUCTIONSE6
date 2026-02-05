@@ -62,13 +62,8 @@ public class GridManager : MonoBehaviour
     }
     public bool CanPlaceAt(Vector2Int cell)
     {
-        // 外は念のため
         if (!IsInside(cell)) return false;
-
-        // 禁止マス
         if (IsForbidden(cell)) return false;
-
-        // すでに壁
         if (HasWall(cell)) return false;
 
         return true;
@@ -76,13 +71,11 @@ public class GridManager : MonoBehaviour
 
     public bool HasWall(Vector2Int cell)
     {
-        // TODO: あなたの壁データに合わせる
         return false;
     }
 
     public bool IsForbidden(Vector2Int cell)
     {
-        // TODO: 禁止マスのルールに合わせる（例: スポーン地点、ゴール、固定床 etc）
         return false;
     }
 }

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class CellHighlighter : MonoBehaviour
 {
@@ -6,10 +6,11 @@ public class CellHighlighter : MonoBehaviour
     [SerializeField] private GridManager gridManager;
     [SerializeField] private GridPointer gridPointer;
     [SerializeField] private BuildController buildController;
+
     [Header("Visual")]
     [SerializeField] private float yOffset = 0.02f;
-    [SerializeField] private Color canColor = new Color(0.2f, 1f, 0.2f, 0.25f);     // ��
-    [SerializeField] private Color cannotColor = new Color(1f, 0.2f, 0.2f, 0.25f);  // ��
+    [SerializeField] private Color canColor = new Color(0.2f, 1f, 0.2f, 0.25f);
+    [SerializeField] private Color cannotColor = new Color(1f, 0.2f, 0.2f, 0.25f);
 
     private GameObject highlightObj;
     private Renderer rend;
@@ -39,32 +40,40 @@ public class CellHighlighter : MonoBehaviour
 
     private void Update()
     {
-        if (gridManager == null || gridPointer == null) return;
+        if (gridManager == null || gridPointer == null || buildController == null) return;
 
-        if (gridPointer.TryGetCellUnderPointer(out var cell, out _))
-        {
-            if (!hasLast || cell != lastCell)
-            {
-                lastCell = cell;
-                hasLast = true;
-
-                Vector3 pos = gridManager.CellToWorldCenter(cell);
-                pos.y += yOffset;
-                highlightObj.transform.position = pos;
-
-                float s = gridManager.CellSize;
-                highlightObj.transform.localScale = new Vector3(s, s, 1f);
-            }
-            bool isOccupied = buildController.IsOccupied(cell);
-            bool canPlace = gridManager.CanPlaceAt(cell)&&!isOccupied;
-            rend.material.color = canPlace ? canColor : cannotColor;
-
-            if (!highlightObj.activeSelf) highlightObj.SetActive(true);
-        }
-        else
+        if (!gridPointer.TryGetCellUnderPointer(out var cell2, out _))
         {
             if (highlightObj.activeSelf) highlightObj.SetActive(false);
             hasLast = false;
+            return;
         }
+
+        // 次に置く3Dセル
+        Vector3Int nextCell3 = buildController.GetNextPlaceCellFromFloor(cell2);
+
+        // 位置更新（セル変化時だけ）
+        if (!hasLast || cell2 != lastCell)
+        {
+            lastCell = cell2;
+            hasLast = true;
+
+            Vector3 pos = gridManager.CellToWorldCenter(cell2);
+
+            pos.y = buildController.BaseYOffset + (nextCell3.y * buildController.BlockHeight) + yOffset;
+
+            highlightObj.transform.position = pos;
+
+            float s = gridManager.CellSize;
+            highlightObj.transform.localScale = new Vector3(s, s, 1f);
+        }
+
+        // 色（3Dセルで判定）
+        bool isInside = gridManager.IsInside(cell2);
+        bool canPlace = buildController.CanPlaceAt3D(nextCell3);
+        bool can = isInside && canPlace;
+        rend.material.color = can ? canColor : cannotColor;
+
+        if (!highlightObj.activeSelf) highlightObj.SetActive(true);
     }
 }

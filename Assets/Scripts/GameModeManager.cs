@@ -18,19 +18,11 @@ public class GameModeManager : MonoBehaviour
     [SerializeField] private MonoBehaviour buildController;   // BuildControllerNewInput
     [SerializeField] private MonoBehaviour cellHighlighter;   // CellHighlighterNewInput
 
-  
-
-    [Tooltip("Edit用の普通のCamera(=GameObjectをON/OFFする)")]
     [SerializeField] private Camera editCamera;
 
-    [Tooltip("EditCameraについてるFreeFlyスクリプト(任意だけど入れた方が安全)")]
     [SerializeField] private FreeFlyCamera editFly;
-
-    [Header("Options")]
     [SerializeField] private Mode startMode = Mode.Edit;
     [SerializeField] private bool disableCameraLookInEdit = true;
-
-    [Header("Cinemachine Priority")]
     [SerializeField] private int playPriority = 20;
     [SerializeField] private int editPriority = 0;
 

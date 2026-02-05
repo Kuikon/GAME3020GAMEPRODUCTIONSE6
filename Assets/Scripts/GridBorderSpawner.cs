@@ -55,16 +55,13 @@ public class GridBorderSpawner : MonoBehaviour
     {
         if (!gridManager.IsInside(cell)) return;
 
-        if (buildController != null && buildController.IsOccupied(cell))
-            return;
-
         Vector3 pos = gridManager.CellToWorldCenter(cell);
         pos.y += spawnYOffset; 
 
         GameObject obj = Instantiate(borderWallPrefab, pos, Quaternion.identity);
         obj.name = $"Border_{cell.x}_{cell.y}";
 
-        if (buildController != null)
-            buildController.RegisterPlaced(cell, obj);
+        //if (buildController != null)
+            //buildController.RegisterPlaced(cell, obj);
     }
 }
