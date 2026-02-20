@@ -56,9 +56,8 @@ public class FreeFlyCamera : MonoBehaviour
         if (!inputEnabled) return;
 
         // ===== Look =====
-        bool canLook = !holdRightMouseToLook || (Mouse.current != null && Mouse.current.rightButton.isPressed);
-        if (canLook)
-        {
+      
+        
             Vector2 look = lookAction.ReadValue<Vector2>() * lookSensitivity;
 
             float yawDelta = look.x;
@@ -66,7 +65,7 @@ public class FreeFlyCamera : MonoBehaviour
 
             float yaw = transform.eulerAngles.y + yawDelta;
             transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
-        }
+        
 
         // ===== Move =====
         Vector2 move = moveAction.ReadValue<Vector2>();

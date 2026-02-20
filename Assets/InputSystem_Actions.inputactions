@@ -1223,7 +1223,7 @@
                 {
                     "name": "",
                     "id": "e1c70cfe-a532-4dff-986e-3a47cba10cf0",
-                    "path": "<Pointer>/position",
+                    "path": "<Mouse>/delta",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
