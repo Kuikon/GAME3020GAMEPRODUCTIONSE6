@@ -3,9 +3,16 @@
 public class CellHighlighter : MonoBehaviour
 {
     [Header("Refs")]
-    [SerializeField] private GridManager gridManager;
-    [SerializeField] private GridPointer gridPointer;
-    [SerializeField] private BuildController buildController;
+    [SerializeField] private GridManager grid;
+    [SerializeField] private Camera cam;
+
+    [Header("Raycast")]
+    [SerializeField] private float rayDistance = 200f;
+    [SerializeField] private LayerMask placeMask; // Block + Ground
+    [SerializeField] private int groundYCell = 0;
+
+    [Header("Occupancy (optional)")]
+    [SerializeField] private BuildController build; // CanPlaceAt を使う用（入れられるなら入れる）
 
     [Header("Visual")]
     [SerializeField] private float yOffset = 0.02f;
@@ -15,15 +22,18 @@ public class CellHighlighter : MonoBehaviour
     private GameObject highlightObj;
     private Renderer rend;
 
-    private Vector2Int lastCell;
+    private Vector3Int lastCell;
     private bool hasLast;
 
     private void Awake()
     {
+        if (cam == null) cam = Camera.main;
+
         highlightObj = GameObject.CreatePrimitive(PrimitiveType.Quad);
         highlightObj.name = "CellHighlight";
         Destroy(highlightObj.GetComponent<Collider>());
 
+        // 上から見えるように水平に
         highlightObj.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
 
         rend = highlightObj.GetComponent<Renderer>();
@@ -40,40 +50,116 @@ public class CellHighlighter : MonoBehaviour
 
     private void Update()
     {
-        if (gridManager == null || gridPointer == null || buildController == null) return;
+        if (grid == null || cam == null)
+            return;
 
-        if (!gridPointer.TryGetCellUnderPointer(out var cell2, out _))
+        if (!TryGetPreviewCell(out var previewCell, out var can))
         {
-            if (highlightObj.activeSelf) highlightObj.SetActive(false);
-            hasLast = false;
+            Hide();
             return;
         }
 
-        // 次に置く3Dセル
-        Vector3Int nextCell3 = buildController.GetNextPlaceCellFromFloor(cell2);
+        UpdateTransformIfCellChanged(previewCell);
+        UpdateColor(can);
+        Show();
+    }
 
-        // 位置更新（セル変化時だけ）
-        if (!hasLast || cell2 != lastCell)
+    // =========================================================
+    // Preview cell (Block face or Ground)
+    // =========================================================
+    private bool TryGetPreviewCell(out Vector3Int cell, out bool canPlace)
+    {
+        cell = default;
+        canPlace = false;
+
+        Ray ray = cam.ScreenPointToRay(UnityEngine.InputSystem.Mouse.current.position.ReadValue());
+        Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.yellow, 0.05f);
+
+        if (!Physics.Raycast(ray, out var hit, rayDistance, placeMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        // ブロックなら面の外側
+        var bi = hit.collider.GetComponentInParent<BlockInstance>();
+        if (bi != null)
         {
-            lastCell = cell2;
-            hasLast = true;
-
-            Vector3 pos = gridManager.CellToWorldCenter(cell2);
-
-            pos.y = buildController.BaseYOffset + (nextCell3.y * buildController.BlockHeight) + yOffset;
-
-            highlightObj.transform.position = pos;
-
-            float s = gridManager.CellSize;
-            highlightObj.transform.localScale = new Vector3(s, s, 1f);
+            Vector3Int normalInt = NormalToInt(hit.normal);
+            //cell = bi.Cell + normalInt;
+        }
+        else
+        {
+            // Groundなら hit.point をセルにして y を固定
+            cell = grid.WorldToCell(hit.point);
+            cell.y = groundYCell;
         }
 
-        // 色（3Dセルで判定）
-        bool isInside = gridManager.IsInside(cell2);
-        bool canPlace = buildController.CanPlaceAt3D(nextCell3);
-        bool can = isInside && canPlace;
-        rend.material.color = can ? canColor : cannotColor;
+        // 範囲内チェック
+        if (!grid.IsInside(cell))
+        {
+            canPlace = false;
+            return true; // 表示はして赤にする
+        }
 
+        // 置けるか（BuildControllerが入ってるなら占有チェック）
+        if (build != null)
+        {
+            // buildの内部辞書がprivateなので、本当は build側に CanPlaceAt(cell) public を用意するのがベスト
+            // ここでは buildがnullなら「中にあるかどうか」判定できないので、とりあえず範囲内なら緑にする
+            canPlace = true;
+        }
+        else
+        {
+            canPlace = true;
+        }
+
+        return true;
+    }
+
+    // =========================================================
+    // Visual updates
+    // =========================================================
+    private void UpdateTransformIfCellChanged(Vector3Int cell)
+    {
+        if (hasLast && cell == lastCell) return;
+
+        lastCell = cell;
+        hasLast = true;
+
+        Vector3 pos = grid.CellToWorldCenter(cell);
+        pos.y += yOffset; // Quadが地面/面にめり込まないように少し浮かす
+        highlightObj.transform.position = pos;
+
+        float s = grid.CellSize;
+        highlightObj.transform.localScale = new Vector3(s, s, 1f);
+    }
+
+    private void UpdateColor(bool can)
+    {
+        rend.material.color = can ? canColor : cannotColor;
+    }
+
+    private void Hide()
+    {
+        if (highlightObj.activeSelf) highlightObj.SetActive(false);
+        hasLast = false;
+    }
+
+    private void Show()
+    {
         if (!highlightObj.activeSelf) highlightObj.SetActive(true);
+    }
+
+    // =========================================================
+    // Normal -> axis direction
+    // =========================================================
+    private static Vector3Int NormalToInt(Vector3 n)
+    {
+        n = n.normalized;
+        float ax = Mathf.Abs(n.x);
+        float ay = Mathf.Abs(n.y);
+        float az = Mathf.Abs(n.z);
+
+        if (ax >= ay && ax >= az) return new Vector3Int((int)Mathf.Sign(n.x), 0, 0);
+        if (ay >= ax && ay >= az) return new Vector3Int(0, (int)Mathf.Sign(n.y), 0);
+        return new Vector3Int(0, 0, (int)Mathf.Sign(n.z));
     }
 }

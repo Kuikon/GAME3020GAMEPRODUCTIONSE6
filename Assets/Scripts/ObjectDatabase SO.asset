@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5576ee769ba10f43934480cedfb7bb0, type: 3}
+  m_Name: ObjectDatabase SO
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectsDatabaseSO
+  objectsData:
+  - <Name>k__BackingField: Platform_4x4x2_blue
+    <ID>k__BackingField: 0
+    <SizeXYZ>k__BackingField: {x: 4, y: 2, z: 4}
+    <Prefab>k__BackingField: {fileID: 5993612924724047696, guid: 1bda544a6356c5344b902fc017707c42, type: 3}
+  - <Name>k__BackingField: Platform_4x4x2_green
+    <ID>k__BackingField: 1
+    <SizeXYZ>k__BackingField: {x: 4, y: 4, z: 2}
+    <Prefab>k__BackingField: {fileID: 2333274547571807430, guid: 576a194a86e35b343ad3ddcccae54081, type: 3}
+  - <Name>k__BackingField: Platform_4x4x2_red
+    <ID>k__BackingField: 2
+    <SizeXYZ>k__BackingField: {x: 4, y: 4, z: 2}
+    <Prefab>k__BackingField: {fileID: 5569881997422985128, guid: 8a4a40bea4e51724eb7b0290be6aa7ed, type: 3}
+  - <Name>k__BackingField: Platform_arrow_2x2x1_yellow
+    <ID>k__BackingField: 3
+    <SizeXYZ>k__BackingField: {x: 2, y: 2, z: 1}
+    <Prefab>k__BackingField: {fileID: 5325131912288433340, guid: 3a19fae0c7a536844a5ed518807c392f, type: 3}

@@ -1,81 +1,82 @@
+// =========================================================
+// GridManager.cs
+// =========================================================
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GridManager : MonoBehaviour
 {
     [SerializeField] private float cellSize = 1f;
-    [SerializeField] private float gridY = 0f;
-    [SerializeField] private int width = 20;
-    [SerializeField] private int height = 20;
+    [SerializeField] private Vector3Int size = new Vector3Int(50, 50, 50);
     [SerializeField] private Transform gridCenter;
+
     public float CellSize => cellSize;
-    public float GridY => gridY;
-    public int Width => width;
-    public int Height => height;
+    public Vector3Int Size => size;
+
     private Vector3 origin;
+
     private void Awake()
     {
-        if (gridCenter == null)
-            gridCenter = transform;
-
+        EnsureGridCenter();
         CalculateOrigin();
     }
+
+    private void EnsureGridCenter()
+    {
+        if (gridCenter == null) gridCenter = transform;
+    }
+
     private void CalculateOrigin()
     {
-        float totalWidth = width * cellSize;
-        float totalHeight = height * cellSize;
-
-        origin = gridCenter.position
-               - new Vector3(totalWidth * 0.5f, 0f, totalHeight * 0.5f);
+        // XZは中心、Yは底
+        Vector3 totalXZ = new Vector3(size.x, 0f, size.z) * cellSize;
+        origin = gridCenter.position - totalXZ * 0.5f;
+        origin.y = gridCenter.position.y;
     }
-    public Vector2Int WorldToCell(Vector3 world)
+
+    public bool IsInside(Vector3Int cell)
+    {
+        return cell.x >= 0 && cell.x < size.x &&
+               cell.y >= 0 && cell.y < size.y &&
+               cell.z >= 0 && cell.z < size.z;
+    }
+
+    public Vector3Int WorldToCell(Vector3 world)
     {
         Vector3 local = world - origin;
 
         int x = Mathf.FloorToInt(local.x / cellSize);
-        int y = Mathf.FloorToInt(local.z / cellSize);
+        int y = Mathf.FloorToInt(local.y / cellSize);
+        int z = Mathf.FloorToInt(local.z / cellSize);
 
-        return new Vector2Int(x, y);
+        return new Vector3Int(x, y, z);
     }
 
-    public Vector3 CellToWorldCenter(Vector2Int cell)
+    public Vector3 CellToWorldCenter(Vector3Int cell)
     {
         float x = (cell.x + 0.5f) * cellSize;
-        float z = (cell.y + 0.5f) * cellSize;
-
-        return origin + new Vector3(x, 0f, z);
-    }
-    public Vector3 CellToWorldEdge(Vector2Int cell, Vector2Int dir)
-    {
-        Vector3 center = CellToWorldCenter(cell);
-        Vector3 offset = new Vector3(
-            dir.x * cellSize * 0.5f,
-            0f,
-            dir.y * cellSize * 0.5f
-        );
-
-        return center + offset;
-    }
-    public bool IsInside(Vector2Int cell)
-    {
-        return cell.x >= 0 && cell.x < width &&
-               cell.y >= 0 && cell.y < height;
-    }
-    public bool CanPlaceAt(Vector2Int cell)
-    {
-        if (!IsInside(cell)) return false;
-        if (IsForbidden(cell)) return false;
-        if (HasWall(cell)) return false;
-
-        return true;
+        float y = (cell.y + 0.5f) * cellSize;
+        float z = (cell.z + 0.5f) * cellSize;
+        return origin + new Vector3(x, y, z);
     }
 
-    public bool HasWall(Vector2Int cell)
+    // -------------------------
+    // Occupancy helpers (XYZ)
+    // -------------------------
+    public IEnumerable<Vector3Int> GetCellsInBox(Vector3Int originCell, Vector3Int sizeXYZ)
     {
-        return false;
+        for (int dx = 0; dx < sizeXYZ.x; dx++)
+            for (int dy = 0; dy < sizeXYZ.y; dy++)
+                for (int dz = 0; dz < sizeXYZ.z; dz++)
+                    yield return new Vector3Int(originCell.x + dx, originCell.y + dy, originCell.z + dz);
     }
 
-    public bool IsForbidden(Vector2Int cell)
+    // 占有ボックスの中心座標（Transformはここに置く）
+    public Vector3 BoxToWorldCenter(Vector3Int originCell, Vector3Int sizeXYZ)
     {
-        return false;
+        float cx = (originCell.x + sizeXYZ.x * 0.5f) * cellSize;
+        float cy = (originCell.y + sizeXYZ.y * 0.5f) * cellSize;
+        float cz = (originCell.z + sizeXYZ.z * 0.5f) * cellSize;
+        return origin + new Vector3(cx, cy, cz);
     }
 }

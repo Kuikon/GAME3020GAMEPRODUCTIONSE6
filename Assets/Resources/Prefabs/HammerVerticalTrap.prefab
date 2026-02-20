@@ -130,7 +130,7 @@ MonoBehaviour:
   playerTag: Player
   groundMask:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 0
   shakeDuration: 1
   shakeAngle: 4
   shakeSpeed: 18

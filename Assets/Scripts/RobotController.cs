@@ -24,7 +24,7 @@ public class RobotController : MonoBehaviour
     [SerializeField] private bool canDoubleJump = true;
 
     [Header("Jump Assist")]
-    [SerializeField] private float jumpUngroundTime = 0.1f; // ★重要
+    [SerializeField] private float jumpUngroundTime = 0.1f; 
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
@@ -111,7 +111,6 @@ public class RobotController : MonoBehaviour
         if (isExternalImpulseActive)
             return;
 
-        // ★ジャンプ直後の接地無効
         if (ungroundTimer > 0f)
             ungroundTimer -= Time.fixedDeltaTime;
 
@@ -225,8 +224,6 @@ public class RobotController : MonoBehaviour
         Vector3 v = rb.linearVelocity;
         v.y = jumpForce;
         rb.linearVelocity = v;
-
-        // ★最重要
         isGrounded = false;
         ungroundTimer = jumpUngroundTime;
 
@@ -306,7 +303,6 @@ public class RobotController : MonoBehaviour
         if (!isExternalImpulseActive)
             return;
 
-        // 指定レイヤーに当たったら解除
         if (((1 << collision.gameObject.layer) & impulseStopLayers) != 0)
         {
             isExternalImpulseActive = false;
@@ -351,15 +347,9 @@ public class RobotController : MonoBehaviour
     {
         conveyorVelocity = Vector3.zero;
         conveyorTimer = 0f;
-
-        // 速度を止める
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
-
-        // 外部インパルス中なら解除（必要なら）
         isExternalImpulseActive = false;
-
-        // 壁接触リセット
         isWallContact = false;
     }
     // =========================================================

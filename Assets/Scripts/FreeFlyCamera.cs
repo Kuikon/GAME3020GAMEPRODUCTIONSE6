@@ -46,7 +46,6 @@ public class FreeFlyCamera : MonoBehaviour
 
     private void OnEnable()
     {
-        // BuildMapをGameModeManagerがEnableしてても問題ない（Enableは冪等）
         map.Enable();
     }
 
@@ -84,7 +83,7 @@ public class FreeFlyCamera : MonoBehaviour
 
         float speed = moveSpeed * (boostAction.IsPressed() ? boostMultiplier : 1f);
 
-        // Editモード中にTime.timeScale=0でも動くように unscaledDeltaTime
+
         transform.position += dir * speed * Time.unscaledDeltaTime;
     }
 }
