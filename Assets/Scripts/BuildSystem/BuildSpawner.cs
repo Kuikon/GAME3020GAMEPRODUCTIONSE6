@@ -11,13 +11,13 @@ public class BuildSpawner
 
         ForceBlockLayerOnAllChildren(obj);
 
-        // Pivotずれ補正：Collider中心を desiredCenter に合わせる
-        var col = obj.GetComponentInChildren<Collider>(true);
-        if (col != null)
-        {
-            Vector3 delta = desiredCenter - col.bounds.center;
-            obj.transform.position += delta;
-        }
+        //// Pivotずれ補正：Collider中心を desiredCenter に合わせる
+        //var col = obj.GetComponentInChildren<Collider>(true);
+        //if (col != null)
+        //{
+        //    Vector3 delta = desiredCenter - col.bounds.center;
+        //    obj.transform.position += delta;
+        //}
 
         var bi = obj.GetComponent<BlockInstance>();
         if (bi == null) bi = obj.AddComponent<BlockInstance>();

@@ -30,7 +30,7 @@ public class BuildController : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
-
+    [SerializeField] private Material previewMaterial;
     // Parts
     private BuildRaycaster raycaster;
     private BuildOccupancy occupancy;
@@ -43,6 +43,10 @@ public class BuildController : MonoBehaviour
     private bool hasLastCell;
     private Vector3Int lastCell;
 
+    private BuildPreview preview;
+
+    private bool hasPreviewCell;
+    private Vector3Int previewCell;
     private void Awake()
     {
         if (cam == null) cam = Camera.main;
@@ -50,7 +54,7 @@ public class BuildController : MonoBehaviour
         occupancy = new BuildOccupancy();
         spawner = new BuildSpawner();
         solver = new BuildPlacementSolver(grid, groundYCell);
-
+        preview = new BuildPreview(grid, previewMaterial);
     }
 
     private void OnEnable()
@@ -87,17 +91,29 @@ public class BuildController : MonoBehaviour
         toggleModeAction?.action.Disable();
     }
 
-    private void Update()
+private void Update()
+{
+    if (!isActiveAndEnabled) return;
+
+    // UI上は何もしない（プレビューも消す）
+    if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
     {
-        if (!isActiveAndEnabled) return;
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) { ResetDrag(); return; }
-        if (mode != BuildInputMode.Drag) return;
-
-        if (!isPlacing && !isRemoving) { hasLastCell = false; return; }
-
-        if (isPlacing) DragPlace();
-        if (isRemoving) DragRemove();
+        preview?.Clear();
+        ResetDrag();
+        return;
     }
+
+    // Remove中はプレビュー更新しない
+    if (!isRemoving) UpdatePreview();
+    else preview?.Clear();
+
+    if (mode != BuildInputMode.Drag) return;
+
+    if (!isPlacing && !isRemoving) { hasLastCell = false; return; }
+
+    if (isPlacing) DragPlace();
+    if (isRemoving) DragRemove();
+}
 
     private void DragPlace()
     {
@@ -196,7 +212,66 @@ public class BuildController : MonoBehaviour
         if (!database.TryGetByID(selectedObjectID, out data)) return false;
         return data != null && data.Prefab != null;
     }
+    // =========================
+    // UI Button Callbacks
+    // =========================
+    public void UI_NextItem()
+    {
+        StepSelection(+1);
+    }
 
+    public void UI_PrevItem()
+    {
+        StepSelection(-1);
+    }
+    private void StepSelection(int delta)
+    {
+        if (database == null) return;
+
+        int count = database.objectsData.Count; // ObjectsDatabaseSO に Count がある想定
+        if (count <= 0) return;
+
+        selectedObjectID += delta;
+
+        if (selectedObjectID < 0)
+            selectedObjectID = count - 1;
+        else if (selectedObjectID >= count)
+            selectedObjectID = 0;
+
+        if (debugLogs)
+            Debug.Log($"Selected Object ID: {selectedObjectID}");
+
+        // プレビューを即更新したい場合
+        preview?.Clear();
+    }
     // Optional selection API
     public void SetSelectedObjectID(int id) => selectedObjectID = id;
+    private void UpdatePreview()
+    {
+        if (!TryGetSelectedData(out var data))
+        {
+            preview?.Clear();
+            return;
+        }
+
+        if (isRemoving) { preview?.Clear(); return; }
+
+        if (!raycaster.RaycastForPlace(out var hit))
+        {
+            preview?.Clear();
+            return;
+        }
+
+        if (!solver.TrySolveOriginCell(hit, data.SizeXYZ, out var originCell))
+        {
+            preview?.Clear();
+            return;
+        }
+
+        preview.SetSelected(data);
+        preview.UpdatePose(originCell, data.SizeXYZ);
+
+        bool canPlace = occupancy.ValidateBox(grid, originCell, data.SizeXYZ, out _);
+        preview.SetValid(canPlace);
+    }
 }
