@@ -43286,7 +43286,6 @@ MonoBehaviour:
   groundYCell: 0
   previewMaterial: {fileID: 2100000, guid: a34744e8063123443a34176c0a66f407, type: 2}
   diagonalAllowed: 1
-  lineTool1x1Only: 1
   debugLogs: 1
 --- !u!4 &1636068510
 Transform:
@@ -56859,36 +56858,15 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6209379936929486143, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
-      propertyPath: jumpForce
-      value: 7
-      objectReference: {fileID: 0}
-    - target: {fileID: 6209379936929486143, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
-      propertyPath: canDoubleJump
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6209379936929486143, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
       propertyPath: cameraTransform
       value: 
       objectReference: {fileID: 705997767}
-    - target: {fileID: 6209379936929486143, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
-      propertyPath: groundLayer.m_Bits
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6209379936929486143, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
-      propertyPath: impulseStopLayers.m_Bits
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 7046294597392429863, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
       propertyPath: m_Name
       value: Robot
       objectReference: {fileID: 0}
-    - target: {fileID: 7046294597392429863, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
-      propertyPath: m_Layer
-      value: 3
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects:
-    - {fileID: 8152299201392753935, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
+    m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}

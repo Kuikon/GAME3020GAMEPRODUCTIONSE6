@@ -1,9 +1,16 @@
 using UnityEngine;
 
+/// <summary>
+/// STATE
+/// - 「今どうなっているか」だけを保持する
+/// - 判断ロジックは一切しない
+/// </summary>
 public class BuildState
 {
-    public BuildController.PlaceToolMode PlaceTool { get; private set; } = BuildController.PlaceToolMode.Single;
+    // Tool state
+    public BuildController.PlaceToolMode PlaceTool { get; private set; }
 
+    // Selection state
     public int SelectedObjectID { get; private set; }
 
     // Line tool state
@@ -14,6 +21,7 @@ public class BuildState
     {
         SelectedObjectID = initialSelectedId;
         PlaceTool = initialTool;
+        CancelLine();
     }
 
     // -------------------------
@@ -48,7 +56,6 @@ public class BuildState
         if (count <= 0) return;
 
         int id = SelectedObjectID + delta;
-
         if (id < 0) id = count - 1;
         else if (id >= count) id = 0;
 

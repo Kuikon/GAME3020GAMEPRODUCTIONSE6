@@ -1,4 +1,6 @@
 ﻿// BuildController.cs (Single + Line only, Drag removed)
+// Commander: Inputを受け取り、Transform/State/Judgment/Output を順番に呼ぶだけ
+
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -36,37 +38,37 @@ public class BuildController : MonoBehaviour
 
     [Header("Line Tool")]
     [SerializeField] private bool diagonalAllowed = true;
-    [SerializeField] private bool lineTool1x1Only = true;
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
-    // Parts
-    private BuildRaycaster raycaster;
-    private BuildOccupancy occupancy;
-    private BuildSpawner spawner;
-    private BuildPlacementSolver solver;
-    private BuildPreview preview;
+    // Parts (Transform / State / Output)
+    private BuildRaycaster raycaster;        // Transform
+    private BuildPlacementSolver solver;    // Transform   
+    private BuildSpawner spawner;           // Output (instantiate)
+    private BuildState state;               // State (tool/selection/line start)
+    private BuildPlacementRules rules;      // Judgment (can place? can use line?)
 
-    // NEW: State
-    private BuildState state;
-
+    private BuildPreview preview;           // Output (visual)
     private void Awake()
     {
         if (cam == null) cam = Camera.main;
 
-        // Init Parts
+        // Parts
         raycaster = new BuildRaycaster(cam, rayDistance, placeMask, blockOnlyMask);
-        occupancy = new BuildOccupancy();
-        spawner = new BuildSpawner();
         solver = new BuildPlacementSolver(grid, groundYCell);
-        preview = new BuildPreview(grid, previewMaterial);
-
-        // Init State
         state = new BuildState(initialSelectedObjectID, initialTool);
+        rules = new BuildPlacementRules(grid);
+        spawner = new BuildSpawner();
+
+        preview = new BuildPreview(grid, previewMaterial);
 
         if (previewMaterial == null && debugLogs)
             Debug.LogWarning("BuildController: previewMaterial is not assigned.");
+        if (grid == null && debugLogs)
+            Debug.LogWarning("BuildController: grid is not assigned.");
+        if (database == null && debugLogs)
+            Debug.LogWarning("BuildController: database is not assigned.");
     }
 
     private void OnEnable()
@@ -98,6 +100,7 @@ public class BuildController : MonoBehaviour
     {
         if (!isActiveAndEnabled) return;
 
+        // UI上は何もしない（プレビューも消す）
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
             preview?.Clear();
@@ -114,7 +117,6 @@ public class BuildController : MonoBehaviour
     {
         state.ToggleTool();
         preview?.Clear();
-
         if (debugLogs) Debug.Log($"Place Tool: {state.PlaceTool}");
     }
 
@@ -143,12 +145,19 @@ public class BuildController : MonoBehaviour
         if (!raycaster.RaycastForPlace(out var hit)) return;
         if (!solver.TrySolveOriginCell(hit, data.SizeXYZ, out var cell)) return;
 
+        // Single
         if (state.PlaceTool == PlaceToolMode.Single)
         {
             PlaceSelected(cell, data);
             return;
         }
+        if (!rules.CanUseLineTool(data, out var reason))
+        {
+            if (debugLogs && !string.IsNullOrEmpty(reason)) Debug.Log(reason);
+            return;
+        }
 
+        // 1st click: remember start
         if (!state.HasLineStart)
         {
             state.BeginLine(cell);
@@ -195,7 +204,7 @@ public class BuildController : MonoBehaviour
         var root = hit.collider.GetComponentInParent<BlockInstance>();
         if (root != null)
         {
-            occupancy.RemoveObjectCells(grid, root.OriginCell, root.SizeXYZ);
+            rules.RemoveObjectCells( root.OriginCell, root.SizeXYZ);
             Destroy(root.gameObject);
             return;
         }
@@ -209,30 +218,33 @@ public class BuildController : MonoBehaviour
     // -------------------------
     private void PlaceSelected(Vector3Int originCell, ObjectData data)
     {
-        if (!occupancy.ValidateBox(grid, originCell, data.SizeXYZ, out var rejectReason))
+        // Judgment: CanPlace は Rules に移動
+        if (!rules.CanPlace(originCell, data.SizeXYZ, out var rejectReason))
         {
             if (debugLogs) Debug.Log($"Place rejected origin={originCell} size={data.SizeXYZ} reason={rejectReason}");
             return;
         }
 
+        // Output + State
         var obj = spawner.Spawn(grid, originCell, data);
-        occupancy.RegisterObjectCells(grid, originCell, data.SizeXYZ, obj);
+        rules.RegisterObjectCells( originCell, data.SizeXYZ, obj);
     }
 
     private void RemoveAtCell(Vector3Int anyCell)
     {
-        if (!occupancy.TryGetObjectAtCell(anyCell, out var obj))
+        if (!rules.TryGetObjectAtCell(anyCell, out var obj))
             return;
 
         if (obj == null)
         {
-            occupancy.ClearCell(anyCell);
+            rules.ClearCell(anyCell);
             return;
         }
 
+
         var bi = obj.GetComponent<BlockInstance>();
-        if (bi != null) occupancy.RemoveObjectCells(grid, bi.OriginCell, bi.SizeXYZ);
-        else occupancy.ClearCell(anyCell);
+        if (bi != null) rules.RemoveObjectCells(bi.OriginCell, bi.SizeXYZ);
+        else rules.ClearCell(anyCell);
 
         Destroy(obj);
     }
@@ -242,7 +254,7 @@ public class BuildController : MonoBehaviour
         data = null;
         if (database == null) return false;
 
-        int id = state != null ? state.SelectedObjectID : initialSelectedObjectID;
+        int id = (state != null) ? state.SelectedObjectID : initialSelectedObjectID;
         if (!database.TryGetByID(id, out data)) return false;
 
         return data != null && data.Prefab != null;
@@ -298,7 +310,8 @@ public class BuildController : MonoBehaviour
         preview.SetSelected(data);
         preview.UpdatePose(originCell, data.SizeXYZ);
 
-        bool canPlace = occupancy.ValidateBox(grid, originCell, data.SizeXYZ, out _);
+        // Judgment: CanPlace は Rules
+        bool canPlace = rules.CanPlace(originCell, data.SizeXYZ, out _);
         preview.SetValid(canPlace);
     }
 }
