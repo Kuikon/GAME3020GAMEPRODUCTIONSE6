@@ -1,166 +1,212 @@
-﻿using UnityEngine;
+﻿// BuildController.cs (Single + Line only, Drag removed)
+using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class BuildController : MonoBehaviour
 {
-    public enum BuildInputMode { Single, Drag }
+    public enum PlaceToolMode { Single, Line }
 
-    [Header("Mode")]
-    [SerializeField] private BuildInputMode mode = BuildInputMode.Drag;
+    [Header("Tool (initial)")]
+    [SerializeField] private PlaceToolMode initialTool = PlaceToolMode.Single;
 
     [Header("Refs")]
     [SerializeField] private GridManager grid;
     [SerializeField] private Camera cam;
+
     [Header("Raycast")]
     [SerializeField] private float rayDistance = 200f;
     [SerializeField] private LayerMask placeMask;     // Block + Ground
     [SerializeField] private LayerMask blockOnlyMask; // Block only
+
     [Header("Input (Build Map)")]
-    [SerializeField] private InputActionReference placeAction;
-    [SerializeField] private InputActionReference removeAction;
-    [SerializeField] private InputActionReference toggleModeAction;
+    [SerializeField] private InputActionReference placeAction;        // LMB
+    [SerializeField] private InputActionReference removeAction;       // RMB
+    [SerializeField] private InputActionReference toggleToolAction;   // e.g. Tab (Single <-> Line)
 
     [Header("Database (SO)")]
     [SerializeField] private ObjectsDatabaseSO database;
-    [SerializeField] private int selectedObjectID = 0;
+    [SerializeField] private int initialSelectedObjectID = 0;
 
     [Header("Ground rule")]
     [SerializeField] private int groundYCell = 0;
 
+    [Header("Preview")]
+    [SerializeField] private Material previewMaterial;
+
+    [Header("Line Tool")]
+    [SerializeField] private bool diagonalAllowed = true;
+    [SerializeField] private bool lineTool1x1Only = true;
+
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
-    [SerializeField] private Material previewMaterial;
+
     // Parts
     private BuildRaycaster raycaster;
     private BuildOccupancy occupancy;
     private BuildSpawner spawner;
     private BuildPlacementSolver solver;
-
-    // Drag state
-    private bool isPlacing;
-    private bool isRemoving;
-    private bool hasLastCell;
-    private Vector3Int lastCell;
-
     private BuildPreview preview;
 
-    private bool hasPreviewCell;
-    private Vector3Int previewCell;
+    // NEW: State
+    private BuildState state;
+
     private void Awake()
     {
         if (cam == null) cam = Camera.main;
+
+        // Init Parts
         raycaster = new BuildRaycaster(cam, rayDistance, placeMask, blockOnlyMask);
         occupancy = new BuildOccupancy();
         spawner = new BuildSpawner();
         solver = new BuildPlacementSolver(grid, groundYCell);
         preview = new BuildPreview(grid, previewMaterial);
+
+        // Init State
+        state = new BuildState(initialSelectedObjectID, initialTool);
+
+        if (previewMaterial == null && debugLogs)
+            Debug.LogWarning("BuildController: previewMaterial is not assigned.");
     }
 
     private void OnEnable()
     {
         placeAction?.action.Enable();
         removeAction?.action.Enable();
-        toggleModeAction?.action.Enable();
+        toggleToolAction?.action.Enable();
 
-        if (placeAction != null) placeAction.action.performed += OnPlaceSingle;
-        if (removeAction != null) removeAction.action.performed += OnRemoveSingle;
-
-        if (placeAction != null)
-        {
-            placeAction.action.started += _ => { if (mode == BuildInputMode.Drag) isPlacing = true; };
-            placeAction.action.canceled += _ => { isPlacing = false; hasLastCell = false; };
-        }
-
-        if (removeAction != null)
-        {
-            removeAction.action.started += _ => { if (mode == BuildInputMode.Drag) isRemoving = true; };
-            removeAction.action.canceled += _ => { isRemoving = false; hasLastCell = false; };
-        }
-
-        if (toggleModeAction != null) toggleModeAction.action.performed += _ => ToggleMode();
+        if (placeAction != null) placeAction.action.performed += OnPlacePerformed;
+        if (removeAction != null) removeAction.action.performed += OnRemovePerformed;
+        if (toggleToolAction != null) toggleToolAction.action.performed += OnToggleToolPerformed;
     }
 
     private void OnDisable()
     {
-        if (placeAction != null) placeAction.action.performed -= OnPlaceSingle;
-        if (removeAction != null) removeAction.action.performed -= OnRemoveSingle;
+        if (placeAction != null) placeAction.action.performed -= OnPlacePerformed;
+        if (removeAction != null) removeAction.action.performed -= OnRemovePerformed;
+        if (toggleToolAction != null) toggleToolAction.action.performed -= OnToggleToolPerformed;
 
         placeAction?.action.Disable();
         removeAction?.action.Disable();
-        toggleModeAction?.action.Disable();
-    }
+        toggleToolAction?.action.Disable();
 
-private void Update()
-{
-    if (!isActiveAndEnabled) return;
-
-    // UI上は何もしない（プレビューも消す）
-    if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-    {
         preview?.Clear();
-        ResetDrag();
-        return;
+        state?.CancelLine();
     }
 
-    // Remove中はプレビュー更新しない
-    if (!isRemoving) UpdatePreview();
-    else preview?.Clear();
-
-    if (mode != BuildInputMode.Drag) return;
-
-    if (!isPlacing && !isRemoving) { hasLastCell = false; return; }
-
-    if (isPlacing) DragPlace();
-    if (isRemoving) DragRemove();
-}
-
-    private void DragPlace()
+    private void Update()
     {
-        if (!TryGetSelectedData(out var data)) return;
-        if (!raycaster.RaycastForPlace(out var hit)) return;
+        if (!isActiveAndEnabled) return;
 
-        if (!solver.TrySolveOriginCell(hit, data.SizeXYZ, out var originCell)) return;
-        if (hasLastCell && originCell == lastCell) return;
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+        {
+            preview?.Clear();
+            return;
+        }
 
-        lastCell = originCell; hasLastCell = true;
-        PlaceSelected(originCell, data);
+        UpdatePreview();
     }
 
-    private void DragRemove()
+    // -------------------------
+    // Tool toggle
+    // -------------------------
+    private void OnToggleToolPerformed(InputAction.CallbackContext _)
     {
-        if (!raycaster.RaycastForRemove(out var hit)) return;
+        state.ToggleTool();
+        preview?.Clear();
 
-        if (!solver.TrySolveRemoveCell(hit, out var cell)) return;
-        if (hasLastCell && cell == lastCell) return;
-
-        lastCell = cell; hasLastCell = true;
-        RemoveAtCell(cell);
+        if (debugLogs) Debug.Log($"Place Tool: {state.PlaceTool}");
     }
 
-    private void OnPlaceSingle(InputAction.CallbackContext _)
+    public void UI_SetToolSingle()
     {
-        if (mode != BuildInputMode.Single) return;
+        state.SetTool(PlaceToolMode.Single);
+        preview?.Clear();
+        if (debugLogs) Debug.Log("Place Tool: Single");
+    }
+
+    public void UI_SetToolLine()
+    {
+        state.SetTool(PlaceToolMode.Line);
+        preview?.Clear();
+        if (debugLogs) Debug.Log("Place Tool: Line");
+    }
+
+    // -------------------------
+    // Place / Remove input
+    // -------------------------
+    private void OnPlacePerformed(InputAction.CallbackContext _)
+    {
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
 
         if (!TryGetSelectedData(out var data)) return;
         if (!raycaster.RaycastForPlace(out var hit)) return;
-        if (!solver.TrySolveOriginCell(hit, data.SizeXYZ, out var originCell)) return;
+        if (!solver.TrySolveOriginCell(hit, data.SizeXYZ, out var cell)) return;
 
-        PlaceSelected(originCell, data);
+        if (state.PlaceTool == PlaceToolMode.Single)
+        {
+            PlaceSelected(cell, data);
+            return;
+        }
+
+        if (!state.HasLineStart)
+        {
+            state.BeginLine(cell);
+            if (debugLogs) Debug.Log($"Line start: {state.LineStartCell}");
+            return;
+        }
+
+        // 2nd click => commit line
+        if (diagonalAllowed)
+        {
+            if (!solver.TryGetLineCellsDiagonal(state.LineStartCell, cell, out var lineCells))
+            {
+                state.CancelLine();
+                preview?.Clear();
+                return;
+            }
+
+            foreach (var c in lineCells)
+                PlaceSelected(c, data);
+        }
+        else
+        {
+            if (!solver.TryGetLineCellsOrthogonal(state.LineStartCell, cell, data.SizeXYZ, out var lineCells))
+            {
+                state.CancelLine();
+                preview?.Clear();
+                return;
+            }
+
+            foreach (var c in lineCells)
+                PlaceSelected(c, data);
+        }
+
+        state.CancelLine();
+        preview?.Clear();
     }
 
-    private void OnRemoveSingle(InputAction.CallbackContext _)
+    private void OnRemovePerformed(InputAction.CallbackContext _)
     {
-        if (mode != BuildInputMode.Single) return;
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
-
         if (!raycaster.RaycastForRemove(out var hit)) return;
-        if (!solver.TrySolveRemoveCell(hit, out var cell)) return;
 
-        RemoveAtCell(cell);
+        // fallback: hit object directly
+        var root = hit.collider.GetComponentInParent<BlockInstance>();
+        if (root != null)
+        {
+            occupancy.RemoveObjectCells(grid, root.OriginCell, root.SizeXYZ);
+            Destroy(root.gameObject);
+            return;
+        }
+
+        if (solver.TrySolveRemoveCell(hit, out var cell))
+            RemoveAtCell(cell);
     }
 
+    // -------------------------
+    // Place / Remove core
+    // -------------------------
     private void PlaceSelected(Vector3Int originCell, ObjectData data)
     {
         if (!occupancy.ValidateBox(grid, originCell, data.SizeXYZ, out var rejectReason))
@@ -191,61 +237,44 @@ private void Update()
         Destroy(obj);
     }
 
-    private void ToggleMode()
-    {
-        mode = (mode == BuildInputMode.Single) ? BuildInputMode.Drag : BuildInputMode.Single;
-        ResetDrag();
-        if (debugLogs) Debug.Log($"Build Input Mode: {mode}");
-    }
-
-    private void ResetDrag()
-    {
-        isPlacing = false;
-        isRemoving = false;
-        hasLastCell = false;
-    }
-
     private bool TryGetSelectedData(out ObjectData data)
     {
         data = null;
         if (database == null) return false;
-        if (!database.TryGetByID(selectedObjectID, out data)) return false;
+
+        int id = state != null ? state.SelectedObjectID : initialSelectedObjectID;
+        if (!database.TryGetByID(id, out data)) return false;
+
         return data != null && data.Prefab != null;
     }
-    // =========================
-    // UI Button Callbacks
-    // =========================
-    public void UI_NextItem()
-    {
-        StepSelection(+1);
-    }
 
-    public void UI_PrevItem()
-    {
-        StepSelection(-1);
-    }
+    // -------------------------
+    // UI Button Callbacks
+    // -------------------------
+    public void UI_NextItem() => StepSelection(+1);
+    public void UI_PrevItem() => StepSelection(-1);
+
     private void StepSelection(int delta)
     {
-        if (database == null) return;
+        if (database == null || state == null) return;
 
-        int count = database.objectsData.Count; // ObjectsDatabaseSO に Count がある想定
-        if (count <= 0) return;
+        int count = database.objectsData.Count;
+        state.StepSelection(delta, count);
 
-        selectedObjectID += delta;
+        if (debugLogs) Debug.Log($"Selected Object ID: {state.SelectedObjectID}");
 
-        if (selectedObjectID < 0)
-            selectedObjectID = count - 1;
-        else if (selectedObjectID >= count)
-            selectedObjectID = 0;
-
-        if (debugLogs)
-            Debug.Log($"Selected Object ID: {selectedObjectID}");
-
-        // プレビューを即更新したい場合
         preview?.Clear();
     }
-    // Optional selection API
-    public void SetSelectedObjectID(int id) => selectedObjectID = id;
+
+    public void SetSelectedObjectID(int id)
+    {
+        state?.SetSelectedObjectID(id);
+        preview?.Clear();
+    }
+
+    // -------------------------
+    // Preview
+    // -------------------------
     private void UpdatePreview()
     {
         if (!TryGetSelectedData(out var data))
@@ -253,8 +282,6 @@ private void Update()
             preview?.Clear();
             return;
         }
-
-        if (isRemoving) { preview?.Clear(); return; }
 
         if (!raycaster.RaycastForPlace(out var hit))
         {

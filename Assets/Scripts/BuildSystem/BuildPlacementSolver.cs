@@ -1,3 +1,5 @@
+// BuildPlacementSolver.cs (adds diagonal line + optional orthogonal line)
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BuildPlacementSolver
@@ -40,6 +42,118 @@ public class BuildPlacementSolver
         return true;
     }
 
+    // -------------------------
+    // Line solve
+    // -------------------------
+
+    /// <summary>
+    /// 斜めOK：XZ平面の Bresenham でセル列を返す
+    /// </summary>
+    public bool TryGetLineCellsDiagonal(Vector3Int startCell, Vector3Int endCell, out List<Vector3Int> cells)
+    {
+        cells = null;
+        if (grid == null) return false;
+
+        startCell.y = groundYCell;
+        endCell.y = groundYCell;
+
+        cells = BresenhamXZ(startCell, endCell);
+        return cells != null && cells.Count > 0;
+    }
+
+    /// <summary>
+    /// 斜め禁止：X/Zどちらかに揃えてセル列を返す（optional）
+    /// </summary>
+    public bool TryGetLineCellsOrthogonal(Vector3Int startCell, Vector3Int endCell, Vector3Int placeSize, out List<Vector3Int> cells)
+    {
+        cells = null;
+        if (grid == null) return false;
+
+        startCell.y = groundYCell;
+        endCell.y = groundYCell;
+
+        // dominant axis lock
+        int dxAbs = Mathf.Abs(endCell.x - startCell.x);
+        int dzAbs = Mathf.Abs(endCell.z - startCell.z);
+        if (dxAbs >= dzAbs) endCell.z = startCell.z;
+        else endCell.x = startCell.x;
+
+        int dx = endCell.x - startCell.x;
+        int dz = endCell.z - startCell.z;
+
+        // サイズを考慮して stride で進む（1x1なら stride=1）
+        Vector3Int step;
+        int steps;
+
+        if (dx != 0)
+        {
+            int dir = dx > 0 ? 1 : -1;
+            int stride = Mathf.Max(1, placeSize.x);
+            step = new Vector3Int(dir * stride, 0, 0);
+            steps = Mathf.Abs(dx) / stride;
+        }
+        else
+        {
+            int dir = dz > 0 ? 1 : -1;
+            int stride = Mathf.Max(1, placeSize.z);
+            step = new Vector3Int(0, 0, dir * stride);
+            steps = Mathf.Abs(dz) / stride;
+        }
+
+        cells = new List<Vector3Int>(steps + 1);
+        var c = startCell;
+
+        for (int i = 0; i <= steps; i++)
+        {
+            cells.Add(c);
+            c += step;
+        }
+
+        return cells.Count > 0;
+    }
+
+    private List<Vector3Int> BresenhamXZ(Vector3Int a, Vector3Int b)
+    {
+        int x0 = a.x, z0 = a.z;
+        int x1 = b.x, z1 = b.z;
+
+        int dx = Mathf.Abs(x1 - x0);
+        int dz = Mathf.Abs(z1 - z0);
+
+        int sx = (x0 < x1) ? 1 : -1;
+        int sz = (z0 < z1) ? 1 : -1;
+
+        int err = dx - dz;
+
+        var result = new List<Vector3Int>(dx + dz + 1);
+
+        while (true)
+        {
+            result.Add(new Vector3Int(x0, groundYCell, z0));
+
+            if (x0 == x1 && z0 == z1) break;
+
+            int e2 = 2 * err;
+
+            if (e2 > -dz)
+            {
+                err -= dz;
+                x0 += sx;
+            }
+
+            if (e2 < dx)
+            {
+                err += dx;
+                z0 += sz;
+            }
+        }
+
+        return result;
+    }
+
+    // -------------------------
+    // Internals
+    // -------------------------
     private bool TryGetBlockInstance(RaycastHit hit, out BlockInstance bi)
     {
         bi = hit.collider.GetComponentInParent<BlockInstance>();

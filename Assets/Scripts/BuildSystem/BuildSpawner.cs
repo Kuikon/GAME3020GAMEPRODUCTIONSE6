@@ -11,14 +11,7 @@ public class BuildSpawner
 
         ForceBlockLayerOnAllChildren(obj);
 
-        //// Pivot‚¸‚ê•â³FCollider’†S‚ğ desiredCenter ‚É‡‚í‚¹‚é
-        //var col = obj.GetComponentInChildren<Collider>(true);
-        //if (col != null)
-        //{
-        //    Vector3 delta = desiredCenter - col.bounds.center;
-        //    obj.transform.position += delta;
-        //}
-
+ 
         var bi = obj.GetComponent<BlockInstance>();
         if (bi == null) bi = obj.AddComponent<BlockInstance>();
         bi.Setup(data.ID, originCell, data.SizeXYZ);
