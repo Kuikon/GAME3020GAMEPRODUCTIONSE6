@@ -146,11 +146,11 @@ public class BuildPlacementSolver
     }
 
     private Vector3Int GetSnappedOriginNextToBox(
-        Vector3Int targetOrigin,
-        Vector3Int targetSize,
-        Vector3Int placeSize,
-        Vector3Int faceNormal,
-        Vector3 hitPoint)
+    Vector3Int targetOrigin,
+    Vector3Int targetSize,
+    Vector3Int placeSize,
+    Vector3Int faceNormal,
+    Vector3 hitPoint)
     {
         int tMinX = targetOrigin.x;
         int tMinY = targetOrigin.y;
@@ -160,20 +160,46 @@ public class BuildPlacementSolver
         int tMaxY = targetOrigin.y + targetSize.y;
         int tMaxZ = targetOrigin.z + targetSize.z;
 
-        Vector3Int insideCell = grid.WorldToCell(hitPoint - (Vector3)faceNormal * 0.01f);
+        Vector3Int inside = grid.WorldToCell(hitPoint - (Vector3)faceNormal * 0.01f);
 
-        int ox = insideCell.x;
-        int oy = insideCell.y;
-        int oz = insideCell.z;
+        inside.x = Mathf.Clamp(inside.x, tMinX, tMaxX - 1);
+        inside.y = Mathf.Clamp(inside.y, tMinY, tMaxY - 1);
+        inside.z = Mathf.Clamp(inside.z, tMinZ, tMaxZ - 1);
 
-        if (faceNormal.x > 0) ox = tMaxX;
+        int ClampOrigin(int v, int minInclusive, int maxExclusive, int size)
+        {
+            // origin ‚ÌÅ‘å’l‚Í (maxExclusive - size)
+            int maxOrigin = maxExclusive - Mathf.Max(1, size);
+            return Mathf.Clamp(v, minInclusive, maxOrigin);
+        }
+
+        int ox = inside.x;
+        int oy = inside.y;
+        int oz = inside.z;
+        if (faceNormal.x > 0) ox = tMaxX;               
         else if (faceNormal.x < 0) ox = tMinX - placeSize.x;
 
-        if (faceNormal.y > 0) oy = tMaxY;
+        if (faceNormal.y > 0) oy = tMaxY;               
         else if (faceNormal.y < 0) oy = tMinY - placeSize.y;
 
-        if (faceNormal.z > 0) oz = tMaxZ;
+        if (faceNormal.z > 0) oz = tMaxZ;               
         else if (faceNormal.z < 0) oz = tMinZ - placeSize.z;
+
+        if (faceNormal.y != 0)
+        {
+            ox = ClampOrigin(ox, tMinX, tMaxX, placeSize.x);
+            oz = ClampOrigin(oz, tMinZ, tMaxZ, placeSize.z);
+        }
+        else if (faceNormal.x != 0)
+        {
+            oy = ClampOrigin(oy, tMinY, tMaxY, placeSize.y);
+            oz = ClampOrigin(oz, tMinZ, tMaxZ, placeSize.z);
+        }
+        else // faceNormal.z != 0
+        {
+            ox = ClampOrigin(ox, tMinX, tMaxX, placeSize.x);
+            oy = ClampOrigin(oy, tMinY, tMaxY, placeSize.y);
+        }
 
         return new Vector3Int(ox, oy, oz);
     }

@@ -26,7 +26,9 @@ public class BuildController : MonoBehaviour
     [SerializeField] private InputActionReference placeAction;        // LMB
     [SerializeField] private InputActionReference removeAction;       // RMB
     [SerializeField] private InputActionReference toggleToolAction;   // e.g. Tab (Single <-> Line)
-
+    [Header("Undo/Redo")]
+    [SerializeField] private InputActionReference undoAction; // Ctrl+Z
+    [SerializeField] private InputActionReference redoAction; // Ctrl+Y
     [Header("Database (SO)")]
     [SerializeField] private ObjectsDatabaseSO database;
     [SerializeField] private int initialSelectedObjectID = 0;
@@ -46,7 +48,7 @@ public class BuildController : MonoBehaviour
     private BuildSpawner spawner;           // Output (instantiate)
     private BuildState state;               // State (tool/selection/line start)
     private BuildPlacementRules rules;      // Judgment (can place? can use line?)
-
+    private CommandHistory history;
     private BuildPreview preview;           // Output (visual)
     private void Awake()
     {
@@ -58,7 +60,7 @@ public class BuildController : MonoBehaviour
         state = new BuildState(initialSelectedObjectID, initialTool);
         rules = new BuildPlacementRules(grid);
         spawner = new BuildSpawner();
-
+        history = new CommandHistory();
         preview = new BuildPreview(grid, previewMaterial);
 
         if (previewMaterial == null && debugLogs)
@@ -68,16 +70,20 @@ public class BuildController : MonoBehaviour
         if (database == null && debugLogs)
             Debug.LogWarning("BuildController: database is not assigned.");
     }
-
+    private void OnUndo(InputAction.CallbackContext _) => history.Undo(debugLogs);
+    private void OnRedo(InputAction.CallbackContext _) => history.Redo(debugLogs);
     private void OnEnable()
     {
         placeAction?.action.Enable();
         removeAction?.action.Enable();
         toggleToolAction?.action.Enable();
-
+        undoAction?.action.Enable();
+        redoAction?.action.Enable();
         if (placeAction != null) placeAction.action.performed += OnPlacePerformed;
         if (removeAction != null) removeAction.action.performed += OnRemovePerformed;
         if (toggleToolAction != null) toggleToolAction.action.performed += OnToggleToolPerformed;
+        if (undoAction != null) undoAction.action.performed += OnUndo;
+        if (redoAction != null) redoAction.action.performed += OnRedo;
     }
 
     private void OnDisable()
@@ -85,10 +91,13 @@ public class BuildController : MonoBehaviour
         if (placeAction != null) placeAction.action.performed -= OnPlacePerformed;
         if (removeAction != null) removeAction.action.performed -= OnRemovePerformed;
         if (toggleToolAction != null) toggleToolAction.action.performed -= OnToggleToolPerformed;
-
+        if (undoAction != null) undoAction.action.performed -= OnUndo;
+        if (redoAction != null) redoAction.action.performed -= OnRedo;
         placeAction?.action.Disable();
         removeAction?.action.Disable();
         toggleToolAction?.action.Disable();
+        undoAction?.action.Disable();
+        redoAction?.action.Disable();
 
         preview?.Clear();
         state?.CancelLine();
@@ -168,9 +177,12 @@ public class BuildController : MonoBehaviour
             preview?.Clear();
             return;
         }
-
-       foreach (var c in lineCells)
-             PlaceSelected(c, data);
+        var group = new CompositeCommand($"Line Place {data.Name}");
+        Quaternion rot = Quaternion.identity;
+        foreach (var c in lineCells)
+            group.Add(new PlaceCommand(grid, spawner, rules, c, data, rot));
+        bool ok = history.Do(group, debugLogs);
+        if (!ok && debugLogs) Debug.Log("Line place failed (rolled back).");
 
         state.CancelLine();
         preview?.Clear();
@@ -185,8 +197,9 @@ public class BuildController : MonoBehaviour
         var root = hit.collider.GetComponentInParent<BlockInstance>();
         if (root != null)
         {
-            rules.RemoveObjectCells( root.OriginCell, root.SizeXYZ);
-            Destroy(root.gameObject);
+            // root のどこかのセルを anyCell として渡せば RemoveCommand が同じブロックを引ける
+            var anyCell = root.OriginCell;
+            RemoveAtCell(anyCell);
             return;
         }
 
@@ -204,30 +217,38 @@ public class BuildController : MonoBehaviour
             if (debugLogs) Debug.Log($"Place rejected origin={originCell} size={data.SizeXYZ} reason={rejectReason}");
             return;
         }
+        Quaternion rot = Quaternion.identity;
+        var cmd = new PlaceCommand(grid, spawner, rules, originCell, data, rot);
+        bool ok = history.Do(cmd, debugLogs);
 
-        // Output + State
-        var obj = spawner.Spawn(grid, originCell, data);
-        rules.RegisterObjectCells( originCell, data.SizeXYZ, obj);
+        if (!ok && debugLogs)
+            Debug.Log($"Place failed @ {originCell}");
+        //// Output + State
+        //var obj = spawner.Spawn(grid, originCell, data, rot);
+        //rules.RegisterObjectCells( originCell, data.SizeXYZ, obj);
       
     }
 
     private void RemoveAtCell(Vector3Int anyCell)
     {
-        if (!rules.TryGetObjectAtCell(anyCell, out var obj))
-            return;
+        // ① occupancy に入ってる？
+        bool has = rules.TryGetObjectAtCell(anyCell, out var obj);
+        Debug.Log($"[RemoveAtCell] cell={anyCell} has={has} obj={(obj ? obj.name : "null")}");
 
-        if (obj == null)
+        // ② obj があるなら BlockInstance 付いてる？
+        if (obj != null)
         {
-            rules.ClearCell(anyCell);
-            return;
+            var bi = obj.GetComponent<BlockInstance>();
+            Debug.Log($"[RemoveAtCell] BlockInstance={(bi ? "OK" : "NULL")}");
+            if (bi != null)
+                Debug.Log($"[RemoveAtCell] bi id={bi.ObjectID} origin={bi.OriginCell} size={bi.SizeXYZ}");
         }
 
+        var cmd = new RemoveCommand(grid, spawner, rules, database, anyCell);
+        bool ok = history.Do(cmd, debugLogs);
 
-        var bi = obj.GetComponent<BlockInstance>();
-        if (bi != null) rules.RemoveObjectCells(bi.OriginCell, bi.SizeXYZ);
-        else rules.ClearCell(anyCell);
-
-        Destroy(obj);
+        if (!ok && debugLogs)
+            Debug.Log($"Remove failed @ {anyCell}");
     }
 
     private bool TryGetSelectedData(out ObjectData data)

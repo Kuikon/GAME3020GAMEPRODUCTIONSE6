@@ -43281,6 +43281,8 @@ MonoBehaviour:
   placeAction: {fileID: 6217279650103845360, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   removeAction: {fileID: 6725273885812366519, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   toggleToolAction: {fileID: -977779647745687168, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  undoAction: {fileID: 7343829938814656369, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  redoAction: {fileID: -8271248406354496046, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   database: {fileID: 11400000, guid: 0a5a7522b67f46249a2af2a6ec41ce8c, type: 2}
   initialSelectedObjectID: 0
   groundYCell: 0

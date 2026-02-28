@@ -2,11 +2,11 @@ using UnityEngine;
 
 public class BuildSpawner
 {
-    public GameObject Spawn(GridManager grid, Vector3Int originCell, ObjectData data)
+    public GameObject Spawn(GridManager grid, Vector3Int originCell, ObjectData data, Quaternion rotation)
     {
         Vector3 desiredCenter = grid.BoxToWorldCenter(originCell, data.SizeXYZ);
 
-        GameObject obj = Object.Instantiate(data.Prefab, desiredCenter, Quaternion.identity);
+        GameObject obj = Object.Instantiate(data.Prefab, desiredCenter, rotation);
         obj.name = $"{data.Name}_ID{data.ID}_{originCell.x}_{originCell.y}_{originCell.z}";
 
         ForceBlockLayerOnAllChildren(obj);
@@ -14,7 +14,7 @@ public class BuildSpawner
  
         var bi = obj.GetComponent<BlockInstance>();
         if (bi == null) bi = obj.AddComponent<BlockInstance>();
-        bi.Setup(data.ID, originCell, data.SizeXYZ);
+        bi.Setup(data.ID, originCell, data.SizeXYZ, rotation);
 
         return obj;
     }
