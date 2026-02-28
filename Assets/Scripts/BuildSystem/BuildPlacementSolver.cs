@@ -41,36 +41,10 @@ public class BuildPlacementSolver
         cell = grid.WorldToCell(inside);
         return true;
     }
-
-    // -------------------------
-    // Line solve
-    // -------------------------
-
-    /// <summary>
-    /// 斜めOK：XZ平面の Bresenham でセル列を返す
-    /// </summary>
-    public bool TryGetLineCellsDiagonal(Vector3Int startCell, Vector3Int endCell, out List<Vector3Int> cells)
-    {
-        cells = null;
-        if (grid == null) return false;
-
-        startCell.y = groundYCell;
-        endCell.y = groundYCell;
-
-        cells = BresenhamXZ(startCell, endCell);
-        return cells != null && cells.Count > 0;
-    }
-
-    /// <summary>
-    /// 斜め禁止：X/Zどちらかに揃えてセル列を返す（optional）
-    /// </summary>
     public bool TryGetLineCellsOrthogonal(Vector3Int startCell, Vector3Int endCell, Vector3Int placeSize, out List<Vector3Int> cells)
     {
         cells = null;
         if (grid == null) return false;
-
-        startCell.y = groundYCell;
-        endCell.y = groundYCell;
 
         // dominant axis lock
         int dxAbs = Mathf.Abs(endCell.x - startCell.x);
@@ -81,7 +55,6 @@ public class BuildPlacementSolver
         int dx = endCell.x - startCell.x;
         int dz = endCell.z - startCell.z;
 
-        // サイズを考慮して stride で進む（1x1なら stride=1）
         Vector3Int step;
         int steps;
 
@@ -102,7 +75,6 @@ public class BuildPlacementSolver
 
         cells = new List<Vector3Int>(steps + 1);
         var c = startCell;
-
         for (int i = 0; i <= steps; i++)
         {
             cells.Add(c);

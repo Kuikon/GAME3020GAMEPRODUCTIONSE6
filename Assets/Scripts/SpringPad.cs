@@ -81,10 +81,6 @@ public class SpringPad : MonoBehaviour
         // ⭐ 物理フレーム後に力を入れる（超重要）
         yield return new WaitForFixedUpdate();
         RobotController rc = rb.GetComponent<RobotController>();
-        if (rc != null)
-        {
-            rc.ApplyExternalImpulse();
-        }
         // 既存の速度を一度消してから反射力を入れる
         rb.linearVelocity = Vector3.zero;
         rb.AddForce(reflectDir * reflectPower, ForceMode.Impulse);

@@ -43285,7 +43285,6 @@ MonoBehaviour:
   initialSelectedObjectID: 0
   groundYCell: 0
   previewMaterial: {fileID: 2100000, guid: a34744e8063123443a34176c0a66f407, type: 2}
-  diagonalAllowed: 1
   debugLogs: 1
 --- !u!4 &1636068510
 Transform:
@@ -56858,9 +56857,21 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6209379936929486143, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
+      propertyPath: canDoubleJump
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6209379936929486143, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
       propertyPath: cameraTransform
       value: 
       objectReference: {fileID: 705997767}
+    - target: {fileID: 6209379936929486143, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
+      propertyPath: jumpUngroundTime
+      value: 1.87
+      objectReference: {fileID: 0}
+    - target: {fileID: 6209379936929486143, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
+      propertyPath: groundLayer.m_Bits
+      value: 4294967295
+      objectReference: {fileID: 0}
     - target: {fileID: 7046294597392429863, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
       propertyPath: m_Name
       value: Robot

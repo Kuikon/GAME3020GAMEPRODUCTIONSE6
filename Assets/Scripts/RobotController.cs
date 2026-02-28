@@ -23,23 +23,16 @@ public class RobotController : MonoBehaviour
     [SerializeField] private float jumpForce = 7f;
     [SerializeField] private bool canDoubleJump = true;
 
-    [Header("Jump Assist")]
-    [SerializeField] private float jumpUngroundTime = 0.1f; 
-
     [Header("Animation")]
     [SerializeField] private Animator animator;
 
     [Header("Conveyor")]
     [SerializeField] private float conveyorStickTime = 0.1f;
 
-    [Header("Impulse Stop Layers")]
-    [SerializeField] private LayerMask impulseStopLayers;
 
     [Header("Ground")]
     [SerializeField] private LayerMask groundLayer;
-    [SerializeField] private float groundSnapDistance = 0.5f;
-    [SerializeField] private float groundSkin = 0.05f;
-    [SerializeField] private float maxSlopeAngle = 60f;
+
 
     // =========================================================
     // Components
@@ -69,7 +62,6 @@ public class RobotController : MonoBehaviour
     private Vector3 conveyorVelocity;
     private float conveyorTimer;
 
-    private bool isExternalImpulseActive;
     private RaycastHit groundHit;
 
     private float ungroundTimer;
@@ -108,16 +100,6 @@ public class RobotController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isExternalImpulseActive)
-            return;
-
-        if (ungroundTimer > 0f)
-            ungroundTimer -= Time.fixedDeltaTime;
-
-        if (ungroundTimer <= 0f)
-            UpdateGround();
-        else
-            isGrounded = false;
 
         UpdateConveyor();
         HandleMovement();
@@ -225,37 +207,10 @@ public class RobotController : MonoBehaviour
         v.y = jumpForce;
         rb.linearVelocity = v;
         isGrounded = false;
-        ungroundTimer = jumpUngroundTime;
-
         if (animator)
             animator.SetTrigger("Jump");
     }
 
-    // =========================================================
-    // Ground
-    // =========================================================
-
-    private void UpdateGround()
-    {
-        isGrounded = false;
-
-        if (!Physics.CapsuleCast(
-            GetCapsuleTop(),
-            GetCapsuleBottom(),
-            GetCapsuleRadius() - groundSkin,
-            Vector3.down,
-            out groundHit,
-            groundSnapDistance,
-            groundLayer,
-            QueryTriggerInteraction.Ignore))
-            return;
-
-        float slopeAngle = Vector3.Angle(groundHit.normal, Vector3.up);
-        isGrounded = slopeAngle <= maxSlopeAngle;
-
-        if (isGrounded)
-            usedDoubleJump = false;
-    }
 
     // =========================================================
     // Conveyor
@@ -291,42 +246,11 @@ public class RobotController : MonoBehaviour
 
     private Vector3 GetCapsuleBottom()
         => transform.TransformPoint(capsule.center - Vector3.up * GetCapsuleHalfHeight());
-    public void ApplyExternalImpulse()
-    {
-        isExternalImpulseActive = true;
-    }
-    // =========================================================
-    // Collision
-    // =========================================================
-    private void OnCollisionEnter(Collision collision)
-    {
-        if (!isExternalImpulseActive)
-            return;
 
-        if (((1 << collision.gameObject.layer) & impulseStopLayers) != 0)
-        {
-            isExternalImpulseActive = false;
-        }
-    }
-    private void OnCollisionStay(Collision collision)
-    {
-        isWallContact = false;
+  
 
-        foreach (var c in collision.contacts)
-        {
-            if (c.normal.y < 0.2f)
-            {
-                isWallContact = true;
-                wallNormal = c.normal;
-                break;
-            }
-        }
-    }
 
-    private void OnCollisionExit(Collision collision)
-    {
-        isWallContact = false;
-    }
+  
 
     // =========================================================
     // Public API
@@ -349,7 +273,6 @@ public class RobotController : MonoBehaviour
         conveyorTimer = 0f;
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
-        isExternalImpulseActive = false;
         isWallContact = false;
     }
     // =========================================================

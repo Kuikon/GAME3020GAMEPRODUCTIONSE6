@@ -23,7 +23,7 @@ public class BuildPlacementRules
     public bool CanUseLineTool(ObjectData data, out string reason)
     {
         reason = "";
-        // いまは制限なし（必要なら1x1Only判定など追加）
+
         return true;
     }
 
@@ -62,7 +62,6 @@ public class BuildPlacementRules
     // Occupancy API (State)
     // ============================================================
 
-    /// <summary>State: セルにオブジェクトを登録</summary>
     public void RegisterObjectCells(Vector3Int originCell, Vector3Int sizeXYZ, GameObject obj)
     {
         if (grid == null) return;
@@ -71,13 +70,11 @@ public class BuildPlacementRules
             occupied[c] = obj;
     }
 
-    /// <summary>State: 指定セルにあるオブジェクトを取得</summary>
     public bool TryGetObjectAtCell(Vector3Int cell, out GameObject obj)
     {
         return occupied.TryGetValue(cell, out obj);
     }
 
-    /// <summary>State: box分の登録を削除</summary>
     public void RemoveObjectCells(Vector3Int originCell, Vector3Int sizeXYZ)
     {
         if (grid == null) return;
@@ -85,10 +82,7 @@ public class BuildPlacementRules
         foreach (var c in grid.GetCellsInBox(originCell, sizeXYZ))
             occupied.Remove(c);
     }
-
-    /// <summary>State: 1セルだけ削除</summary>
     public void ClearCell(Vector3Int cell) => occupied.Remove(cell);
 
-    /// <summary>State: 念のため全クリア</summary>
     public void ClearAll() => occupied.Clear();
 }

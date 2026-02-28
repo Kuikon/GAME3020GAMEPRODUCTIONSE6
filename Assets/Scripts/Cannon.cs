@@ -185,9 +185,6 @@ public class Cannon : MonoBehaviour
         isHolding = false;
         line.enabled = false;
 
-        // ★ 外部インパルス開始（時間なし）
-        currentPlayer.ApplyExternalImpulse();
-
         Vector3 direction = GetFireDirection().normalized;
         playerRb.linearVelocity = direction * firePower;
 

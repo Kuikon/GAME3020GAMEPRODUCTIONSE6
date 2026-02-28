@@ -1,6 +1,7 @@
 ﻿// BuildController.cs (Single + Line only, Drag removed)
 // Commander: Inputを受け取り、Transform/State/Judgment/Output を順番に呼ぶだけ
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -35,9 +36,6 @@ public class BuildController : MonoBehaviour
 
     [Header("Preview")]
     [SerializeField] private Material previewMaterial;
-
-    [Header("Line Tool")]
-    [SerializeField] private bool diagonalAllowed = true;
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
@@ -99,8 +97,6 @@ public class BuildController : MonoBehaviour
     private void Update()
     {
         if (!isActiveAndEnabled) return;
-
-        // UI上は何もしない（プレビューも消す）
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
         {
             preview?.Clear();
@@ -166,30 +162,15 @@ public class BuildController : MonoBehaviour
         }
 
         // 2nd click => commit line
-        if (diagonalAllowed)
+        if (!solver.TryGetLineCellsOrthogonal(state.LineStartCell, cell, data.SizeXYZ, out var lineCells))
         {
-            if (!solver.TryGetLineCellsDiagonal(state.LineStartCell, cell, out var lineCells))
-            {
-                state.CancelLine();
-                preview?.Clear();
-                return;
-            }
-
-            foreach (var c in lineCells)
-                PlaceSelected(c, data);
+            state.CancelLine();
+            preview?.Clear();
+            return;
         }
-        else
-        {
-            if (!solver.TryGetLineCellsOrthogonal(state.LineStartCell, cell, data.SizeXYZ, out var lineCells))
-            {
-                state.CancelLine();
-                preview?.Clear();
-                return;
-            }
 
-            foreach (var c in lineCells)
-                PlaceSelected(c, data);
-        }
+       foreach (var c in lineCells)
+             PlaceSelected(c, data);
 
         state.CancelLine();
         preview?.Clear();
@@ -218,7 +199,6 @@ public class BuildController : MonoBehaviour
     // -------------------------
     private void PlaceSelected(Vector3Int originCell, ObjectData data)
     {
-        // Judgment: CanPlace は Rules に移動
         if (!rules.CanPlace(originCell, data.SizeXYZ, out var rejectReason))
         {
             if (debugLogs) Debug.Log($"Place rejected origin={originCell} size={data.SizeXYZ} reason={rejectReason}");
@@ -228,6 +208,7 @@ public class BuildController : MonoBehaviour
         // Output + State
         var obj = spawner.Spawn(grid, originCell, data);
         rules.RegisterObjectCells( originCell, data.SizeXYZ, obj);
+      
     }
 
     private void RemoveAtCell(Vector3Int anyCell)
@@ -301,17 +282,67 @@ public class BuildController : MonoBehaviour
             return;
         }
 
-        if (!solver.TrySolveOriginCell(hit, data.SizeXYZ, out var originCell))
+        if (!solver.TrySolveOriginCell(hit, data.SizeXYZ, out var hoverCell))
         {
             preview?.Clear();
             return;
         }
 
+        // 選択データに応じて preview prefab を準備（BuildPreview側）
         preview.SetSelected(data);
-        preview.UpdatePose(originCell, data.SizeXYZ);
 
-        // Judgment: CanPlace は Rules
-        bool canPlace = rules.CanPlace(originCell, data.SizeXYZ, out _);
-        preview.SetValid(canPlace);
+        // ---- Single：いままで通り単体表示 ----
+        if (state.PlaceTool == PlaceToolMode.Single)
+        {
+            preview.ShowSingle(hoverCell, data.SizeXYZ);
+
+            bool canPlace = rules.CanPlace(hoverCell, data.SizeXYZ, out _);
+            preview.SetValid(canPlace);
+            return;
+        }
+
+        // ---- Line：まずLineToolを使えるか ----
+        if (!rules.CanUseLineTool(data, out _))
+        {
+            // 使えない場合でも “単体候補” は見せる（好みで Clear でもOK）
+            preview.ShowSingle(hoverCell, data.SizeXYZ);
+            preview.SetValid(false);
+            return;
+        }
+
+        // 1回目クリック前：開始点候補として単体表示
+        if (!state.HasLineStart)
+        {
+            preview.ShowSingle(hoverCell, data.SizeXYZ);
+
+            bool canPlace = rules.CanPlace(hoverCell, data.SizeXYZ, out _);
+            preview.SetValid(canPlace);
+            return;
+        }
+
+        // 1回目クリック後：開始点→hoverまでを複数表示
+        bool ok;
+        List<Vector3Int> lineCells;
+            ok = solver.TryGetLineCellsOrthogonal(state.LineStartCell, hoverCell, data.SizeXYZ, out lineCells);
+
+        if (!ok || lineCells == null || lineCells.Count == 0)
+        {
+            preview.ClearActiveOnly();
+            return;
+        }
+
+        preview.ShowLine(lineCells, data.SizeXYZ);
+
+        // 1個でも置けなければ NG 色
+        bool allPlaceable = true;
+        foreach (var c in lineCells)
+        {
+            if (!rules.CanPlace(c, data.SizeXYZ, out _))
+            {
+                allPlaceable = false;
+                break;
+            }
+        }
+        preview.SetValid(allPlaceable);
     }
 }
