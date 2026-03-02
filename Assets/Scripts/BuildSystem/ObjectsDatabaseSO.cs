@@ -24,4 +24,5 @@ public class ObjectData
     [field: SerializeField] public Vector3Int SizeXYZ { get; private set; } = Vector3Int.one;
 
     [field: SerializeField] public GameObject Prefab { get; private set; }
+    [field: SerializeField] public bool IsBoxShape { get; private set; }
 }

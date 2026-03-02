@@ -9,7 +9,6 @@ public class RemoveCommand : IBuildCommand
     private readonly BlockInstance directTarget;
     private readonly Vector3Int anyCell;
 
-    // Undo—p
     private int removedID;
     private Vector3Int removedOrigin;
     private Vector3Int removedSize;

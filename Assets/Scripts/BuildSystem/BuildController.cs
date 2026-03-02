@@ -1,7 +1,4 @@
-﻿// BuildController.cs (Single + Line only, Drag removed)
-// Commander: Inputを受け取り、Transform/State/Judgment/Output を順番に呼ぶだけ
-
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -212,43 +209,18 @@ public class BuildController : MonoBehaviour
     // -------------------------
     private void PlaceSelected(Vector3Int originCell, ObjectData data)
     {
-        if (!rules.CanPlace(originCell, data.SizeXYZ, out var rejectReason))
-        {
-            if (debugLogs) Debug.Log($"Place rejected origin={originCell} size={data.SizeXYZ} reason={rejectReason}");
-            return;
-        }
+        if (!rules.CanPlace(originCell, data.SizeXYZ, out var rejectReason))return;
         Quaternion rot = Quaternion.identity;
         var cmd = new PlaceCommand(grid, spawner, rules, originCell, data, rot);
         bool ok = history.Do(cmd, debugLogs);
-
-        if (!ok && debugLogs)
-            Debug.Log($"Place failed @ {originCell}");
-        //// Output + State
-        //var obj = spawner.Spawn(grid, originCell, data, rot);
-        //rules.RegisterObjectCells( originCell, data.SizeXYZ, obj);
       
     }
 
     private void RemoveAtCell(Vector3Int anyCell)
     {
-        // ① occupancy に入ってる？
         bool has = rules.TryGetObjectAtCell(anyCell, out var obj);
-        Debug.Log($"[RemoveAtCell] cell={anyCell} has={has} obj={(obj ? obj.name : "null")}");
-
-        // ② obj があるなら BlockInstance 付いてる？
-        if (obj != null)
-        {
-            var bi = obj.GetComponent<BlockInstance>();
-            Debug.Log($"[RemoveAtCell] BlockInstance={(bi ? "OK" : "NULL")}");
-            if (bi != null)
-                Debug.Log($"[RemoveAtCell] bi id={bi.ObjectID} origin={bi.OriginCell} size={bi.SizeXYZ}");
-        }
-
         var cmd = new RemoveCommand(grid, spawner, rules, database, anyCell);
         bool ok = history.Do(cmd, debugLogs);
-
-        if (!ok && debugLogs)
-            Debug.Log($"Remove failed @ {anyCell}");
     }
 
     private bool TryGetSelectedData(out ObjectData data)

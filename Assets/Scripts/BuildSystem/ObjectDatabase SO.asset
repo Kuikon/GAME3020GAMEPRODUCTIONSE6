@@ -29,3 +29,7 @@ MonoBehaviour:
     <ID>k__BackingField: 3
     <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 2}
     <Prefab>k__BackingField: {fileID: 5325131912288433340, guid: 3a19fae0c7a536844a5ed518807c392f, type: 3}
+  - <Name>k__BackingField: platform_slope_4x2x2_blue
+    <ID>k__BackingField: 4
+    <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 2}
+    <Prefab>k__BackingField: {fileID: 5264273733790164958, guid: c91bf965e86511643bbaf62d62cbcef8, type: 3}
