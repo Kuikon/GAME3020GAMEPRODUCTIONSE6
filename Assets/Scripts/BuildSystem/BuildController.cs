@@ -199,9 +199,6 @@ public class BuildController : MonoBehaviour
             RemoveAtCell(anyCell);
             return;
         }
-
-        if (solver.TrySolveRemoveCell(hit, out var cell))
-            RemoveAtCell(cell);
     }
 
     // -------------------------

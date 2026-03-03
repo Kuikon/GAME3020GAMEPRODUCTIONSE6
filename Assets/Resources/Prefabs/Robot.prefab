@@ -1298,18 +1298,11 @@ MonoBehaviour:
   rotateSpeed: 12
   jumpForce: 7
   canDoubleJump: 0
-  jumpUngroundTime: 0.1
   animator: {fileID: 827575953087440114}
   conveyorStickTime: 0.1
-  impulseStopLayers:
-    serializedVersion: 2
-    m_Bits: 1
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
-  groundSnapDistance: 0.6
-  groundSkin: 0.05
-  maxSlopeAngle: 60
+    m_Bits: 4294967295
 --- !u!54 &3850204397875304075
 Rigidbody:
   m_ObjectHideFlags: 0

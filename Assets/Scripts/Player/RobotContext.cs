@@ -18,30 +18,21 @@ public sealed class RobotContext
     public float RotateSpeed;
 
     public float JumpForce;
-    public bool CanDoubleJump;
 
     public float ConveyorStickTime;
 
     public LayerMask GroundLayer;
     public float GroundCheckDistance;
-    public float CoyoteTime;
-
-    public float WallCheckDistance;
 
     // ========= STATE =========
     public Vector2 MoveInput;
     public bool JumpPressed;
-
+    public bool _jumpToExecute;
     public bool IsGrounded;
-    public bool UsedDoubleJump;
-
-    public bool IsWallContact;
     public Vector3 WallNormal;
 
     public Vector3 ConveyorVelocity;
     public float ConveyorTimer;
-
-    public float UngroundTimer;
 
     // ========= TRANSFORM cache =========
     public Vector3 MoveDir;         
