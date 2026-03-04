@@ -32,15 +32,6 @@ public class BuildPlacementSolver
         return true;
     }
 
-    public bool TrySolveRemoveCell(RaycastHit hit, out Vector3Int cell)
-    {
-        cell = default;
-        if (grid == null) return false;
-
-        Vector3 inside = hit.point - hit.normal * 0.01f;
-        cell = grid.WorldToCell(inside);
-        return true;
-    }
     public bool TryGetLineCellsOrthogonal(Vector3Int startCell, Vector3Int endCell, Vector3Int placeSize, out List<Vector3Int> cells)
     {
         cells = null;
@@ -82,45 +73,6 @@ public class BuildPlacementSolver
         }
 
         return cells.Count > 0;
-    }
-
-    private List<Vector3Int> BresenhamXZ(Vector3Int a, Vector3Int b)
-    {
-        int x0 = a.x, z0 = a.z;
-        int x1 = b.x, z1 = b.z;
-
-        int dx = Mathf.Abs(x1 - x0);
-        int dz = Mathf.Abs(z1 - z0);
-
-        int sx = (x0 < x1) ? 1 : -1;
-        int sz = (z0 < z1) ? 1 : -1;
-
-        int err = dx - dz;
-
-        var result = new List<Vector3Int>(dx + dz + 1);
-
-        while (true)
-        {
-            result.Add(new Vector3Int(x0, groundYCell, z0));
-
-            if (x0 == x1 && z0 == z1) break;
-
-            int e2 = 2 * err;
-
-            if (e2 > -dz)
-            {
-                err -= dz;
-                x0 += sx;
-            }
-
-            if (e2 < dx)
-            {
-                err += dx;
-                z0 += sz;
-            }
-        }
-
-        return result;
     }
 
     // -------------------------

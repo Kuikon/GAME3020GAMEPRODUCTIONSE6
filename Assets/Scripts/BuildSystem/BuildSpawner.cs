@@ -2,11 +2,16 @@ using UnityEngine;
 
 public class BuildSpawner
 {
+    private readonly Transform parent;
+    public BuildSpawner(Transform parent = null)
+    {
+        this.parent = parent;
+    }
     public GameObject Spawn(GridManager grid, Vector3Int originCell, ObjectData data, Quaternion rotation)
     {
         Vector3 desiredCenter = grid.BoxToWorldCenter(originCell, data.SizeXYZ);
 
-        GameObject obj = Object.Instantiate(data.Prefab, desiredCenter, rotation);
+        GameObject obj = Object.Instantiate(data.Prefab, desiredCenter, rotation, parent);
         obj.name = $"{data.Name}_ID{data.ID}_{originCell.x}_{originCell.y}_{originCell.z}";
 
         ForceBlockLayerOnAllChildren(obj);

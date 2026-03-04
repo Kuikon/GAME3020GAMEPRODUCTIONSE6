@@ -4,82 +4,55 @@ public sealed class RobotJudgmentLogic
 {
     public void Tick(RobotContext ctx)
     {
-        CheckGrounded(ctx);
-        ConsumeJumpIfAny(ctx);
+         ctx.IsGrounded = CheckGrounded(ctx);
         ComputeDesiredVelocity(ctx);
     }
 
 
     private bool CheckGrounded(RobotContext ctx)
     {
-        GetCapsuleWorld(ctx, out var p1, out var p2, out float radius);
+        if (ctx.GroundCheckSphere == null) return false;
 
-        return Physics.CapsuleCast(
-            p1, p2, radius * 0.98f,
+        Transform t = ctx.GroundCheckSphere.transform;
+        Vector3 worldCenter = t.TransformPoint(ctx.GroundCheckSphere.center);
+
+        float scale = Mathf.Max(t.lossyScale.x, t.lossyScale.z);
+        float worldRadius = ctx.GroundCheckSphere.radius * scale;
+
+        bool hitSomething = Physics.SphereCast(
+            worldCenter,
+            worldRadius,
             Vector3.down,
-            out _,
+            out RaycastHit hit,
             ctx.GroundCheckDistance,
             ctx.GroundLayer,
             QueryTriggerInteraction.Ignore
         );
-    }
 
-    private void ConsumeJumpIfAny(RobotContext ctx)
-    {
-        if (!ctx.JumpPressed) return;
+        // 中心から下へ線（当たったら hit.point まで）
+        Vector3 end = hitSomething ? hit.point : (worldCenter + Vector3.down * ctx.GroundCheckDistance);
+        Debug.DrawLine(worldCenter, end, hitSomething ? Color.green : Color.red);
 
-        ctx.JumpPressed = false;
-
-        if (!CanJump(ctx)) return;
-
-        ctx._jumpToExecute = true;
-    }
-
-    private bool CanJump(RobotContext ctx)
-    {
-        if (ctx.IsGrounded) return true;
-        return true;
+        const float minGroundNormalY = 0.7f;
+        return hitSomething && hit.normal.y >= minGroundNormalY;
     }
 
     private void ComputeDesiredVelocity(RobotContext ctx)
     {
-        Vector3 v = ctx.Rb.linearVelocity;
-
-        if (ctx.IsGrounded)
-            v.y = Mathf.Min(v.y, 0f);
-
-        Vector3 horizontal = ctx.MoveDir * ctx.MoveSpeed;
+        Vector3 rbV = ctx.Rb.linearVelocity;
+        float speed = ctx.RunHeld ? ctx.RunSpeed : ctx.MoveSpeed;
+        Vector3 horizontal = ctx.MoveDir * speed;
 
         // 入力なし & 地面 → コンベアのみ
         if (ctx.IsGrounded && ctx.MoveInput.sqrMagnitude < 0.01f)
         {
-            ctx.DesiredVelocity = new Vector3(ctx.ConveyorVelocity.x, v.y, ctx.ConveyorVelocity.z);
+            ctx.DesiredVelocity = new Vector3(ctx.ConveyorVelocity.x, rbV.y, ctx.ConveyorVelocity.z);
             return;
         }
 
-        Vector3 desired = new Vector3(horizontal.x, v.y, horizontal.z);
+        Vector3 desired = new Vector3(horizontal.x, rbV.y, horizontal.z);
         desired += ctx.ConveyorVelocity;
 
         ctx.DesiredVelocity = desired;
     }
-
-    private void GetCapsuleWorld(RobotContext ctx, out Vector3 p1, out Vector3 p2, out float radius)
-    {
-        var capsule = ctx.Capsule;
-        Transform t = capsule.transform;
-
-        Vector3 center = t.TransformPoint(capsule.center);
-
-        float r = capsule.radius * Mathf.Max(t.lossyScale.x, t.lossyScale.z);
-        float height = Mathf.Max(capsule.height * t.lossyScale.y, r * 2f);
-        float half = (height * 0.5f) - r;
-
-        p1 = center + Vector3.up * half;
-        p2 = center - Vector3.up * half;
-        radius = r;
-    }
-
-    // ===== “ジャンプ実行要求”を ctx に持たせるための小技（引数増やさない） =====
-    // RobotContext に private を置けないので partial でも良いが、最小でいくため
-    // extensionっぽく公開フィールドにする
 }

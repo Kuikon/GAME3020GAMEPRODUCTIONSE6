@@ -12,7 +12,10 @@ public sealed class RobotOutputLogic
 
     private void ApplyMovement(RobotContext ctx)
     {
-        ctx.Rb.linearVelocity = ctx.DesiredVelocity;
+        Vector3 v = ctx.Rb.linearVelocity; 
+        v.x = ctx.DesiredVelocity.x;
+        v.z = ctx.DesiredVelocity.z;
+        ctx.Rb.linearVelocity = v;
     }
 
     private void ApplyRotation(RobotContext ctx)

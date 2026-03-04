@@ -30,6 +30,7 @@ public class BuildController : MonoBehaviour
     [SerializeField] private ObjectsDatabaseSO database;
     [SerializeField] private int initialSelectedObjectID = 0;
 
+    [SerializeField] private Transform placedRoot;
     [Header("Ground rule")]
     [SerializeField] private int groundYCell = 0;
 
@@ -39,8 +40,8 @@ public class BuildController : MonoBehaviour
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
-    // Parts (Transform / State / Output)
-    private BuildRaycaster raycaster;        // Transform
+    // Parts (Transform / State / Output) 
+    private BuildRaycaster raycaster;       //Make ray to get block info  
     private BuildPlacementSolver solver;    // Transform   
     private BuildSpawner spawner;           // Output (instantiate)
     private BuildState state;               // State (tool/selection/line start)
@@ -50,13 +51,12 @@ public class BuildController : MonoBehaviour
     private void Awake()
     {
         if (cam == null) cam = Camera.main;
-
         // Parts
-        raycaster = new BuildRaycaster(cam, rayDistance, placeMask, blockOnlyMask);
+       raycaster = new BuildRaycaster(cam, rayDistance, placeMask, blockOnlyMask);
         solver = new BuildPlacementSolver(grid, groundYCell);
         state = new BuildState(initialSelectedObjectID, initialTool);
         rules = new BuildPlacementRules(grid);
-        spawner = new BuildSpawner();
+        spawner = new BuildSpawner(placedRoot);
         history = new CommandHistory();
         preview = new BuildPreview(grid, previewMaterial);
 

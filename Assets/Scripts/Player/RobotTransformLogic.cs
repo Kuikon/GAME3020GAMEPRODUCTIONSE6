@@ -6,6 +6,7 @@ public sealed class RobotTransformLogic
     {
         ComputeMoveDir(ctx);
         ComputeRotationTarget(ctx);
+        ApplyFixedJumpXZToDesiredVelocity(ctx);
     }
 
     private void ComputeMoveDir(RobotContext ctx)
@@ -39,5 +40,25 @@ public sealed class RobotTransformLogic
 
         ctx.DesiredRotation = Quaternion.LookRotation(ctx.MoveDir, Vector3.up);
         ctx.HasDesiredRotation = true;
+    }
+    private void ApplyFixedJumpXZToDesiredVelocity(RobotContext ctx)
+    {
+        if (!ctx.FixedJumpActive) return;
+
+        float t = ctx.FixedJumpDuration <= 0f ? 1f : Mathf.Clamp01(ctx.FixedJumpTime / ctx.FixedJumpDuration);
+
+        Vector3 desiredXZ = Vector3.Lerp(ctx.FixedJumpStartXZ, ctx.FixedJumpTargetXZ, t);
+
+        Vector3 p = ctx.Rb.position;
+        Vector3 currentXZ = new Vector3(p.x, 0f, p.z);
+
+        Vector3 delta = desiredXZ - currentXZ;
+        Vector3 neededVelXZ = delta / Mathf.Max(0.0001f, ctx.Dt);
+
+        if (ctx.LockAirControl)
+        {
+            ctx.DesiredVelocity = new Vector3(neededVelXZ.x, ctx.DesiredVelocity.y, neededVelXZ.z);
+            return;
+        }
     }
 }

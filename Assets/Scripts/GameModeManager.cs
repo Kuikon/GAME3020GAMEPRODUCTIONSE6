@@ -11,7 +11,7 @@ public class GameModeManager : MonoBehaviour
     [SerializeField] private string toggleActionName = "ToggleMode"; // Build/ToggleMode
 
     [Header("Refs")]
-    [SerializeField] private RobotController robot;
+    [SerializeField] private RobotControllerCommander robot;
     [SerializeField] private OrbitCamera cameraOrbit;
 
     [Header("Build Scripts (enable in Edit)")]
@@ -23,9 +23,8 @@ public class GameModeManager : MonoBehaviour
     [SerializeField] private FreeFlyCamera editFly;
     [SerializeField] private Mode startMode = Mode.Edit;
     [SerializeField] private bool disableCameraLookInEdit = true;
-    [SerializeField] private int playPriority = 20;
-    [SerializeField] private int editPriority = 0;
-
+    [SerializeField] private ObjectsDatabaseSO database; // ★ 追加
+    [SerializeField] private Transform placedRoot;
     private Mode mode;
 
     private InputActionMap buildMap;
@@ -72,7 +71,7 @@ public class GameModeManager : MonoBehaviour
             robot.SetInputEnabled(isPlay);
             if (!isPlay) robot.StopImmediately();
         }
-
+        ApplyPlacedColliderMode(isPlay);
         // =========================
         // Camera look (Play用Orbit等)
         // =========================
@@ -110,5 +109,28 @@ public class GameModeManager : MonoBehaviour
         Cursor.lockState = isPlay ? CursorLockMode.Locked : CursorLockMode.None;
 
         Debug.Log($"Mode: {mode}");
+    }
+    private void ApplyPlacedColliderMode(bool isPlay)
+    {
+        if (database == null) return;
+
+        // 置いた物だけに絞る（placedRootがあるならそれが一番安全＆軽い）
+        if (placedRoot != null)
+        {
+            var blocks = placedRoot.GetComponentsInChildren<BlockInstance>(true);
+            foreach (var bi in blocks)
+                if (bi) bi.ApplyColliderMode(isPlay, database);
+            Debug.Log($"[ColliderSwitch] Found blocks: {blocks.Length}");
+
+            foreach (var bi in blocks)
+            {
+                Debug.Log($"[ColliderSwitch] Applying to {bi.name}");
+                bi.ApplyColliderMode(isPlay, database);
+            }
+            return;
+        }
+    
+
+      
     }
 }

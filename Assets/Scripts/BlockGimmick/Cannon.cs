@@ -46,7 +46,7 @@ public class Cannon : MonoBehaviour
     // Runtime
     // =========================================================
 
-    private RobotController currentPlayer;
+    private RobotControllerCommander currentPlayer;
     private Rigidbody playerRb;
     private bool isHolding;
 
@@ -126,7 +126,7 @@ public class Cannon : MonoBehaviour
     {
         if (isHolding) return;
 
-        RobotController player = other.GetComponent<RobotController>();
+        RobotControllerCommander player = other.GetComponent<RobotControllerCommander>();
         Rigidbody rb = other.GetComponent<Rigidbody>();
 
         if (player == null || rb == null) return;
@@ -138,7 +138,7 @@ public class Cannon : MonoBehaviour
     // State Control
     // =========================================================
 
-    private void HoldPlayer(RobotController player, Rigidbody rb)
+    private void HoldPlayer(RobotControllerCommander player, Rigidbody rb)
     {
         currentPlayer = player;
         playerRb = rb;

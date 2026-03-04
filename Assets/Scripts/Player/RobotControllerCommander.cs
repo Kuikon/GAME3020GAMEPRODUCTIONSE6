@@ -15,9 +15,6 @@ public class RobotControllerCommander : MonoBehaviour
     public float moveSpeed = 5f;
     public float rotateSpeed = 12f;
 
-    [Header("Jump")]
-    public float jumpForce = 7f;
-    public bool canDoubleJump = true;
 
     [Header("Animation")]
     public Animator animator;
@@ -63,6 +60,10 @@ public class RobotControllerCommander : MonoBehaviour
     {
         // FACT: “ü—ÍiUpdate‚Å“Ç‚Şj
         ctx.MoveInput = ctx.MoveAction.ReadValue<Vector2>();
+        if (ctx.RunAction != null)
+            ctx.RunHeld = ctx.RunAction.ReadValue<float>() > 0.5f;
+        else
+            ctx.RunHeld = false;
     }
 
     private void FixedUpdate()
@@ -70,9 +71,10 @@ public class RobotControllerCommander : MonoBehaviour
         ctx.Dt = Time.fixedDeltaTime;
 
         // –ğŠ„‚Ì‡”Ô‚¾‚¯Œˆ‚ß‚ÄŒÄ‚Ô
+        judge.Tick(ctx);
         state.Tick(ctx);
         xform.Tick(ctx);
-        judge.Tick(ctx);
+   
         output.Tick(ctx);
     }
 
