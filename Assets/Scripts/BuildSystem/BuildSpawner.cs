@@ -33,4 +33,12 @@ public class BuildSpawner
         foreach (Transform t in obj.GetComponentsInChildren<Transform>(true))
             t.gameObject.layer = blockLayer;
     }
+    public void MoveExisting(GridManager grid, BlockInstance target, Vector3Int originCell, Vector3Int sizeXYZ, Quaternion rot)
+    {
+        if (grid == null || target == null) return;
+
+        Vector3 world = grid.BoxToWorldCenter(originCell, sizeXYZ); 
+        target.transform.position = world;
+        target.transform.rotation = rot;
+    }
 }

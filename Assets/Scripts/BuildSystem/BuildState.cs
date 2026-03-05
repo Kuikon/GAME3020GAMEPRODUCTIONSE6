@@ -16,14 +16,18 @@ public class BuildState
     // Line tool state
     public bool HasLineStart { get; private set; }
     public Vector3Int LineStartCell { get; private set; }
+    public bool HasMoveTarget { get; private set; }
+    public BlockInstance MoveTarget { get; private set; }
 
+    
     public BuildState(int initialSelectedId, BuildController.PlaceToolMode initialTool)
     {
         SelectedObjectID = initialSelectedId;
         PlaceTool = initialTool;
         CancelLine();
     }
-
+    public void BeginMove(BlockInstance t) { HasMoveTarget = true; MoveTarget = t; }
+    public void CancelMove() { HasMoveTarget = false; MoveTarget = null; }
     // -------------------------
     // Tool
     // -------------------------

@@ -35,8 +35,9 @@ public class PlaceCommand : IBuildCommand
 
         spawned = spawner.Spawn(grid, originCell, data, rotation);
         if (spawned == null) return false;
-
-        rules.RegisterObjectCells(originCell, data.SizeXYZ, spawned);
+        var bi = spawned.GetComponent<BlockInstance>();
+        if (bi == null) return false;
+        rules.RegisterObjectCells(originCell, data.SizeXYZ, bi);
         return true;
     }
 

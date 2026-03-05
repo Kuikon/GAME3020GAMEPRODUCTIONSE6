@@ -1,16 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// JUDGMENT + STATE(Occupancy merged)
-/// - 本来は Judgment は状態を持たないのが理想だが、クラス数を減らすために Occupancy を統合版
-/// </summary>
 public class BuildPlacementRules
 {
     private readonly GridManager grid;
 
     // ---- Occupancy(State) merged here ----
-    private readonly Dictionary<Vector3Int, GameObject> occupied = new();
+    private readonly Dictionary<Vector3Int, BlockInstance> occupied = new();
 
     public BuildPlacementRules(GridManager grid)
     {
@@ -57,12 +53,38 @@ public class BuildPlacementRules
 
         return true;
     }
+    public bool CanPlaceIgnoring(BlockInstance ignore, Vector3Int originCell, Vector3Int sizeXYZ, out string reason)
+    {
+        reason = "";
 
+        if (grid == null)
+        {
+            reason = "GRID_NULL";
+            return false;
+        }
+
+        foreach (var c in grid.GetCellsInBox(originCell, sizeXYZ))
+        {
+            if (!grid.IsInside(c))
+            {
+                reason = $"OUTSIDE {c}";
+                return false;
+            }
+
+            if (occupied.TryGetValue(c, out var bi) && bi != null && bi != ignore)
+            {
+                reason = $"OCCUPIED {c} by {bi.name}";
+                return false;
+            }
+        }
+
+        return true;
+    }
     // ============================================================
     // Occupancy API (State)
     // ============================================================
 
-    public void RegisterObjectCells(Vector3Int originCell, Vector3Int sizeXYZ, GameObject obj)
+    public void RegisterObjectCells(Vector3Int originCell, Vector3Int sizeXYZ, BlockInstance obj)
     {
         if (grid == null) return;
 
@@ -70,7 +92,7 @@ public class BuildPlacementRules
             occupied[c] = obj;
     }
 
-    public bool TryGetObjectAtCell(Vector3Int cell, out GameObject obj)
+    public bool TryGetObjectAtCell(Vector3Int cell, out BlockInstance obj)
     {
         return occupied.TryGetValue(cell, out obj);
     }

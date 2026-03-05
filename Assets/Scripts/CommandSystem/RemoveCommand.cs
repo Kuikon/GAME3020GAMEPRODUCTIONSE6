@@ -46,7 +46,7 @@ public class RemoveCommand : IBuildCommand
 
 
         rules.RemoveObjectCells(removedOrigin, removedSize);
-        Object.Destroy(obj);
+        Object.Destroy(bi.gameObject);
 
         return true;
     }
@@ -60,6 +60,8 @@ public class RemoveCommand : IBuildCommand
             return;
 
         var obj = spawner.Spawn(grid, removedOrigin, data, removedRot);
-        rules.RegisterObjectCells(removedOrigin, removedSize, obj);
+        var bi = obj.GetComponent<BlockInstance>();
+        if (bi == null) return;
+        rules.RegisterObjectCells(removedOrigin, removedSize, bi);
     }
 }

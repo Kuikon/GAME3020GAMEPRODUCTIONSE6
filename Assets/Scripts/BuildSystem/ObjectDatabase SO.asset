@@ -17,7 +17,7 @@ MonoBehaviour:
     <ID>k__BackingField: 0
     <SizeXYZ>k__BackingField: {x: 4, y: 2, z: 4}
     <Prefab>k__BackingField: {fileID: 5993612924724047696, guid: 1bda544a6356c5344b902fc017707c42, type: 3}
-    <IsBoxShape>k__BackingField: 0
+    <IsBoxShape>k__BackingField: 1
   - <Name>k__BackingField: Platform_4x2x4_green
     <ID>k__BackingField: 1
     <SizeXYZ>k__BackingField: {x: 4, y: 2, z: 4}
@@ -43,13 +43,18 @@ MonoBehaviour:
     <SizeXYZ>k__BackingField: {x: 4, y: 14, z: 4}
     <Prefab>k__BackingField: {fileID: 4137553097501895094, guid: d59affa55e0c6e54bb5bbdb301e9e008, type: 3}
     <IsBoxShape>k__BackingField: 0
-  - <Name>k__BackingField: Start_6x6x5
+  - <Name>k__BackingField: Start_6x5x6
     <ID>k__BackingField: 6
-    <SizeXYZ>k__BackingField: {x: 6, y: 6, z: 5}
+    <SizeXYZ>k__BackingField: {x: 6, y: 5, z: 6}
     <Prefab>k__BackingField: {fileID: 8986416493928728895, guid: b8cb46852cf00f64cb1e160e179c4b4b, type: 3}
     <IsBoxShape>k__BackingField: 0
-  - <Name>k__BackingField: Goal_6x6x7
+  - <Name>k__BackingField: Goal_6x7x6
     <ID>k__BackingField: 7
-    <SizeXYZ>k__BackingField: {x: 6, y: 6, z: 7}
+    <SizeXYZ>k__BackingField: {x: 6, y: 7, z: 6}
     <Prefab>k__BackingField: {fileID: 90094258057818800, guid: 107908fd45877174c9d9870fb78dbb17, type: 3}
+    <IsBoxShape>k__BackingField: 0
+  - <Name>k__BackingField: pillar_2x4x2
+    <ID>k__BackingField: 8
+    <SizeXYZ>k__BackingField: {x: 2, y: 4, z: 2}
+    <Prefab>k__BackingField: {fileID: 5560175402179146487, guid: aeec58fd3a958a44e9e214f898356ce7, type: 3}
     <IsBoxShape>k__BackingField: 0

@@ -1255,6 +1255,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "MoveBlock",
+                    "type": "Button",
+                    "id": "36da60e1-a65b-4ba6-9f45-95b272a0a58b",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -1404,7 +1413,7 @@
                 {
                     "name": "",
                     "id": "b39d3746-3ab2-4356-b14a-29957e90cc15",
-                    "path": "<Mouse>/middleButton",
+                    "path": "<Keyboard>/leftCtrl",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -1431,6 +1440,17 @@
                     "processors": "",
                     "groups": "",
                     "action": "Undo",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a417a14a-0c4f-49da-8997-71d0a3c8c4c2",
+                    "path": "<Mouse>/middleButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MoveBlock",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
