@@ -16,7 +16,6 @@ public class GameModeManager : MonoBehaviour
 
     [Header("Build Scripts (enable in Edit)")]
     [SerializeField] private MonoBehaviour buildController;   // BuildControllerNewInput
-    [SerializeField] private MonoBehaviour cellHighlighter;   // CellHighlighterNewInput
 
     [SerializeField] private Camera editCamera;
 
@@ -52,7 +51,8 @@ public class GameModeManager : MonoBehaviour
     {
         SetMode(startMode);
     }
-
+    public void ForceModeEdit() => SetMode(Mode.Edit);
+    public void ForceModePlay() => SetMode(Mode.Play);
     private void OnToggle(InputAction.CallbackContext ctx)
     {
         SetMode(mode == Mode.Play ? Mode.Edit : Mode.Play);
@@ -87,7 +87,6 @@ public class GameModeManager : MonoBehaviour
         // Build scripts
         // =========================
         if (buildController != null) buildController.enabled = !isPlay;
-        if (cellHighlighter != null) cellHighlighter.enabled = !isPlay;
 
         // =========================
         // Camera switching

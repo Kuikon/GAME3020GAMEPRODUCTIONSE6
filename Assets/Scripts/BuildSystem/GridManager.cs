@@ -52,13 +52,6 @@ public class GridManager : MonoBehaviour
         return new Vector3Int(x, y, z);
     }
 
-    public Vector3 CellToWorldCenter(Vector3Int cell)
-    {
-        float x = (cell.x + 0.5f) * cellSize;
-        float y = (cell.y + 0.5f) * cellSize;
-        float z = (cell.z + 0.5f) * cellSize;
-        return origin + new Vector3(x, y, z);
-    }
 
     // -------------------------
     // Occupancy helpers (XYZ)

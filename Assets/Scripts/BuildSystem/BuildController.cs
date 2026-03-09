@@ -44,7 +44,8 @@ public class BuildController : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
-
+    public BuildPlacementRules Rules => rules;
+    public BuildSpawner Spawner => spawner;
     // Parts
     private BuildRaycaster raycaster;
     private BuildPlacementSolver solver;
