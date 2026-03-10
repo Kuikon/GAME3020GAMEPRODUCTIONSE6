@@ -32,7 +32,7 @@ public sealed class RobotStateLogic
     }
     private bool CanJump(RobotContext ctx)
     {
-        return ctx.IsGrounded;
+        return ctx.IsGrounded && !ctx.FixedJumpActive;
     }
     private int DecideJumpCells(RobotContext ctx)
     {
@@ -60,26 +60,27 @@ public sealed class RobotStateLogic
     {
         float g = Mathf.Abs(Physics.gravity.y);
 
-        // JumpForce = 上向き初速（m/s）
         ctx.JumpForce = Mathf.Sqrt(2f * g * ctx.JumpHeight);
-
-        // 空中時間（上り+下り）見積もり
         ctx.FixedJumpDuration = Mathf.Max(0.05f, (2f * ctx.JumpForce) / g);
         ctx.FixedJumpTime = 0f;
 
-        // Start XZ
         Vector3 pos = ctx.Rb.position;
         ctx.FixedJumpStartXZ = new Vector3(pos.x, 0f, pos.z);
 
-        // Target XZ（cells * cellSize）
         float dist = cells * ctx.CellSize;
 
         Vector3 dir = ctx.MoveDir;
         dir.y = 0f;
-        if (dir.sqrMagnitude > 1f) dir.Normalize();
+
+        if (dir.sqrMagnitude > 0.0001f)
+            dir.Normalize();
+        else
+            dir = Vector3.zero;
+
+        // 追加：ジャンプ開始時の方向を保存
+        ctx.FixedJumpDirectionXZ = dir;
 
         ctx.FixedJumpTargetXZ = ctx.FixedJumpStartXZ + dir * dist;
-
         ctx.FixedJumpActive = true;
     }
     private void TickFixedJumpState(RobotContext ctx)

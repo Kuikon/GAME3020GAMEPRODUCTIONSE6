@@ -45,7 +45,7 @@ public sealed class RobotOutputLogic
 
         Vector3 v = ctx.Rb.linearVelocity;
         float speed = new Vector3(v.x, 0f, v.z).magnitude;
-
+        Debug.Log(speed);
         ctx.Animator.SetFloat("Speed", speed);
         ctx.Animator.SetBool("IsGrounded", ctx.IsGrounded);
     }

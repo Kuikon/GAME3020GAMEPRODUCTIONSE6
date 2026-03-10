@@ -99,6 +99,7 @@ public class LevelListItemUI : MonoBehaviour
     public void UI_Select()
     {
         owner?.Select(levelId);
+        owner.UI_Edit();
     }
 
     public void UI_Duplicate()

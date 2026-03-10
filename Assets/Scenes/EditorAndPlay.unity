@@ -1283,9 +1283,9 @@ MonoBehaviour:
     LookAtTarget: {fileID: 0}
     CustomLookAtTarget: 0
   Lens:
-    FieldOfView: 30
+    FieldOfView: 47.4
     OrthographicSize: 5
-    NearClipPlane: 0.01
+    NearClipPlane: 6.32
     FarClipPlane: 1000
     Dutch: 0
     ModeOverride: 0
@@ -1311,7 +1311,7 @@ Transform:
   m_GameObject: {fileID: 32470938}
   serializedVersion: 2
   m_LocalRotation: {x: 0.2840153, y: -0, z: -0, w: 0.95881975}
-  m_LocalPosition: {x: 4, y: 5.520855, z: -5.5386434}
+  m_LocalPosition: {x: 4, y: 4.8090286, z: -0.86182356}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1329,10 +1329,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 886251e9a18ece04ea8e61686c173e1b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachinePositionComposer
-  CameraDistance: 14.2
+  CameraDistance: 9.89
   DeadZoneDepth: 0
   Composition:
-    ScreenPosition: {x: 0, y: 0.28}
+    ScreenPosition: {x: 0, y: 0.47}
     DeadZone:
       Enabled: 0
       Size: {x: 0.2, y: 0.2}
@@ -1890,12 +1890,14 @@ MonoBehaviour:
   robot: {fileID: 8674306283314966613}
   cameraOrbit: {fileID: 705997768}
   buildController: {fileID: 1636068509}
+  mainCamera: {fileID: 330585545}
   editCamera: {fileID: 1520430209}
   editFly: {fileID: 1520430207}
   startMode: 1
   disableCameraLookInEdit: 1
   database: {fileID: 11400000, guid: 0a5a7522b67f46249a2af2a6ec41ce8c, type: 2}
   placedRoot: {fileID: 1993440064}
+  debugLogs: 1
 --- !u!4 &51499449
 Transform:
   m_ObjectHideFlags: 0
@@ -9407,9 +9409,9 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.01
+  near clip plane: 6.32
   far clip plane: 1000
-  field of view: 30
+  field of view: 47.4
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -9436,7 +9438,7 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: 0.2840153, y: 0, z: 0, w: 0.95881975}
-  m_LocalPosition: {x: 4, y: 10.520855, z: -5.5386434}
+  m_LocalPosition: {x: 4, y: 9.809029, z: -0.86182356}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -36159,7 +36161,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1380993265
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36167,7 +36169,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1380993264}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
   m_Name: 
@@ -40599,7 +40601,7 @@ GameObject:
   - component: {fileID: 1520430207}
   m_Layer: 0
   m_Name: EditCamera
-  m_TagString: MainCamera
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -40636,7 +40638,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1520430206}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
   m_Name: 

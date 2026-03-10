@@ -9,6 +9,7 @@ public class EditorPlayRuntime : MonoBehaviour
     [SerializeField] private ObjectsDatabaseSO database;
     [SerializeField] private Transform placedRoot;
 
+    [Header("Thumbnail Camera")]
     [SerializeField] private Camera thumbnailCamera;
     [SerializeField] private int thumbnailWidth = 256;
     [SerializeField] private int thumbnailHeight = 144;
@@ -40,7 +41,7 @@ public class EditorPlayRuntime : MonoBehaviour
 
         if (string.IsNullOrEmpty(GameManager.I.CurrentLevelId))
         {
-            Debug.LogWarning("CurrentLevelId is empty. Creating temp level.");
+            Debug.LogWarning("[EditorPlayRuntime] CurrentLevelId is empty. Creating temp level.");
             var meta = db.CreateNew("Auto Level");
             GameManager.I.CurrentLevelId = meta.levelId;
             GameManager.I.StartMode = StartMode.Edit;
@@ -68,9 +69,11 @@ public class EditorPlayRuntime : MonoBehaviour
 
         var data = serializer.Capture(levelId, placedRoot);
         db.SaveLevel(data);
+
         SaveThumbnail(levelId);
+
         if (debugLogs)
-            Debug.Log($"Saved Level: {levelId} / Blocks={data.blocks.Count}");
+            Debug.Log($"[EditorPlayRuntime] Saved Level: {levelId} / Blocks={data.blocks.Count}");
     }
 
     public void UI_Load()
@@ -78,7 +81,7 @@ public class EditorPlayRuntime : MonoBehaviour
         LoadCurrentLevel();
 
         if (debugLogs)
-            Debug.Log($"Loaded Level: {GameManager.I.CurrentLevelId}");
+            Debug.Log($"[EditorPlayRuntime] Loaded Level: {GameManager.I.CurrentLevelId}");
     }
 
     private void LoadCurrentLevel()
@@ -91,25 +94,31 @@ public class EditorPlayRuntime : MonoBehaviour
             placedRoot,
             grid,
             database,
-            buildController.Spawner,
-            buildController.Rules
-
+            buildController != null ? buildController.Spawner : null,
+            buildController != null ? buildController.Rules : null
         );
     }
+
     private void SaveThumbnail(string levelId)
     {
         if (thumbnailCamera == null)
         {
-            Debug.LogWarning("Thumbnail camera is null.");
+            Debug.LogWarning("[EditorPlayRuntime] Thumbnail camera is null.");
             return;
         }
+
+        if (debugLogs)
+            Debug.Log($"[EditorPlayRuntime] Thumbnail Camera = {thumbnailCamera.name}");
 
         RenderTexture rt = new RenderTexture(thumbnailWidth, thumbnailHeight, 24);
         Texture2D tex = new Texture2D(thumbnailWidth, thumbnailHeight, TextureFormat.RGB24, false);
 
         RenderTexture prevActive = RenderTexture.active;
         RenderTexture prevCameraTarget = thumbnailCamera.targetTexture;
+        bool prevCameraEnabled = thumbnailCamera.enabled;
 
+        // âÊñ Ç…èoÇ≥Ç∏ÅARenderTextureÇ…ÇæÇØï`âÊÇ∑ÇÈ
+        thumbnailCamera.enabled = false;
         thumbnailCamera.targetTexture = rt;
         RenderTexture.active = rt;
 
@@ -118,7 +127,9 @@ public class EditorPlayRuntime : MonoBehaviour
         tex.ReadPixels(new Rect(0, 0, thumbnailWidth, thumbnailHeight), 0, 0);
         tex.Apply();
 
+        // å≥Ç…ñﬂÇ∑
         thumbnailCamera.targetTexture = prevCameraTarget;
+        thumbnailCamera.enabled = prevCameraEnabled;
         RenderTexture.active = prevActive;
 
         byte[] png = tex.EncodeToPNG();
@@ -131,6 +142,6 @@ public class EditorPlayRuntime : MonoBehaviour
         Destroy(tex);
 
         if (debugLogs)
-            Debug.Log($"Thumbnail saved: {thumbPath}");
+            Debug.Log($"[EditorPlayRuntime] Thumbnail saved: {thumbPath}");
     }
 }

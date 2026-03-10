@@ -35,9 +35,6 @@ public sealed class RobotFactsBinder
         ctx.JumpCellsMoving = 2;  
         ctx.JumpCellsRunning = 4;
 
-        ctx.MovingThreshold = 0.2f; // 「すでに動いてる」判定の速度( m/s )
-        ctx.LockAirControl = true;  // 距離を正確にしたいなら true
-
         ctx.ConveyorStickTime = c.conveyorStickTime;
 
         ctx.GroundLayer = c.groundLayer;

@@ -5,7 +5,6 @@ public sealed class RobotJudgmentLogic
     public void Tick(RobotContext ctx)
     {
          ctx.IsGrounded = CheckGrounded(ctx);
-        ComputeDesiredVelocity(ctx);
     }
 
 
@@ -37,22 +36,5 @@ public sealed class RobotJudgmentLogic
         return hitSomething && hit.normal.y >= minGroundNormalY;
     }
 
-    private void ComputeDesiredVelocity(RobotContext ctx)
-    {
-        Vector3 rbV = ctx.Rb.linearVelocity;
-        float speed = ctx.RunHeld ? ctx.RunSpeed : ctx.MoveSpeed;
-        Vector3 horizontal = ctx.MoveDir * speed;
-
-        // 入力なし & 地面 → コンベアのみ
-        if (ctx.IsGrounded && ctx.MoveInput.sqrMagnitude < 0.01f)
-        {
-            ctx.DesiredVelocity = new Vector3(ctx.ConveyorVelocity.x, rbV.y, ctx.ConveyorVelocity.z);
-            return;
-        }
-
-        Vector3 desired = new Vector3(horizontal.x, rbV.y, horizontal.z);
-        desired += ctx.ConveyorVelocity;
-
-        ctx.DesiredVelocity = desired;
-    }
+  
 }

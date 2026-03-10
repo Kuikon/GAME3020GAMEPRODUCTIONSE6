@@ -85,6 +85,7 @@ public sealed class RobotContext
     public Vector3 FixedJumpStartXZ;   // y=0 stored
     public Vector3 FixedJumpTargetXZ;  // y=0 stored
 
+    public Vector3 FixedJumpDirectionXZ;
     // =========================================================
     // FRAME
     // =========================================================
