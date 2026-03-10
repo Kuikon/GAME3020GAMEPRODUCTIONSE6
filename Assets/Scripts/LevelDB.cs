@@ -138,4 +138,19 @@ public class LevelDB
         var index = LoadIndex();
         return index.levels.Find(x => x.levelId == levelId)?.name ?? "Level";
     }
+    public string GetThumbnailPath(string levelId)
+    {
+        return ThumbPath(levelId);
+    }
+
+    public void SetThumbnailPath(string levelId, string thumbnailPath)
+    {
+        var index = LoadIndex();
+        var meta = index.levels.Find(x => x.levelId == levelId);
+        if (meta == null) return;
+
+        meta.thumbnailPath = thumbnailPath;
+        meta.updatedAtTicks = DateTime.UtcNow.Ticks;
+        SaveIndex(index);
+    }
 }

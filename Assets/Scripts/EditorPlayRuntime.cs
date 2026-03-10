@@ -9,13 +9,15 @@ public class EditorPlayRuntime : MonoBehaviour
     [SerializeField] private ObjectsDatabaseSO database;
     [SerializeField] private Transform placedRoot;
 
+    [SerializeField] private Camera thumbnailCamera;
+    [SerializeField] private int thumbnailWidth = 256;
+    [SerializeField] private int thumbnailHeight = 144;
+
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
     private LevelDB db;
     private LevelSerializer serializer;
-    private BuildSpawner spawner;
-    private BuildPlacementRules rules;
 
     private void Awake()
     {
@@ -30,15 +32,6 @@ public class EditorPlayRuntime : MonoBehaviour
 
         if (buildController == null)
             buildController = FindFirstObjectByType<BuildController>();
-
-
-        // Ç±ÇÃéûì_Ç≈éÊÇÍÇÍÇŒégÇ§
-        if (buildController != null)
-            rules = buildController.Rules;
-
-        // Ç‹Çæ null Ç»ÇÁé©ëOê∂ê¨
-        if (rules == null)
-            rules = new BuildPlacementRules(grid);
     }
 
     private void Start()
@@ -75,7 +68,7 @@ public class EditorPlayRuntime : MonoBehaviour
 
         var data = serializer.Capture(levelId, placedRoot);
         db.SaveLevel(data);
-
+        SaveThumbnail(levelId);
         if (debugLogs)
             Debug.Log($"Saved Level: {levelId} / Blocks={data.blocks.Count}");
     }
@@ -98,9 +91,46 @@ public class EditorPlayRuntime : MonoBehaviour
             placedRoot,
             grid,
             database,
-            spawner,
-            rules
+            buildController.Spawner,
+            buildController.Rules
 
         );
+    }
+    private void SaveThumbnail(string levelId)
+    {
+        if (thumbnailCamera == null)
+        {
+            Debug.LogWarning("Thumbnail camera is null.");
+            return;
+        }
+
+        RenderTexture rt = new RenderTexture(thumbnailWidth, thumbnailHeight, 24);
+        Texture2D tex = new Texture2D(thumbnailWidth, thumbnailHeight, TextureFormat.RGB24, false);
+
+        RenderTexture prevActive = RenderTexture.active;
+        RenderTexture prevCameraTarget = thumbnailCamera.targetTexture;
+
+        thumbnailCamera.targetTexture = rt;
+        RenderTexture.active = rt;
+
+        thumbnailCamera.Render();
+
+        tex.ReadPixels(new Rect(0, 0, thumbnailWidth, thumbnailHeight), 0, 0);
+        tex.Apply();
+
+        thumbnailCamera.targetTexture = prevCameraTarget;
+        RenderTexture.active = prevActive;
+
+        byte[] png = tex.EncodeToPNG();
+        string thumbPath = db.GetThumbnailPath(levelId);
+        System.IO.File.WriteAllBytes(thumbPath, png);
+
+        db.SetThumbnailPath(levelId, thumbPath);
+
+        Destroy(rt);
+        Destroy(tex);
+
+        if (debugLogs)
+            Debug.Log($"Thumbnail saved: {thumbPath}");
     }
 }
