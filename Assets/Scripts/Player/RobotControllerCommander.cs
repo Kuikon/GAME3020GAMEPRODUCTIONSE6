@@ -11,9 +11,26 @@ public class RobotControllerCommander : MonoBehaviour
     [Header("Input")]
     public InputActionAsset inputActions;
 
+    [Header("Ground")]
+    public LayerMask groundLayer;
+    public float groundCheckDistance = 0.08f;
+    public Transform groundPoint;
+    public float groundCheckRadius = 0.2f;
     [Header("Movement")]
     public float moveSpeed = 5f;
+    public float runSpeed = 8f;
     public float rotateSpeed = 12f;
+    public float groundAccel = 35f;
+    public float airAccel = 12f;
+
+    [Header("Jump")]
+    public float jumpHeight = 1.8f;
+    public float jumpBufferTime = 0.12f;
+    public float coyoteTime = 0.12f;
+    public float jumpCutMultiplier = 0.5f;
+    public float fallGravityMultiplier = 2.0f;
+    public float lowJumpGravityMultiplier = 2.5f;
+
 
 
     [Header("Animation")]
@@ -21,10 +38,6 @@ public class RobotControllerCommander : MonoBehaviour
 
     [Header("Conveyor")]
     public float conveyorStickTime = 0.1f;
-
-    [Header("Ground")]
-    public LayerMask groundLayer;
-    public float groundCheckDistance = 0.08f;
 
     private RobotContext ctx;
 
@@ -34,32 +47,47 @@ public class RobotControllerCommander : MonoBehaviour
     private readonly RobotJudgmentLogic judge = new RobotJudgmentLogic();
     private readonly RobotOutputLogic output = new RobotOutputLogic();
 
-    private System.Action<InputAction.CallbackContext> jumpHandler;
+    private System.Action<InputAction.CallbackContext> jumpPerformedHandler;
+    private System.Action<InputAction.CallbackContext> jumpCanceledHandler;
+
 
     private void Awake()
     {
         ctx = new RobotContext();
         facts.Bind(ctx, this);
 
-        jumpHandler = OnJumpPerformed;
+        jumpPerformedHandler = OnJumpPerformed;
+        jumpCanceledHandler = OnJumpCanceled;
     }
+
 
     private void OnEnable()
     {
         ctx.PlayerMap.Enable();
-        ctx.JumpAction.performed += jumpHandler;
+
+        if (ctx.JumpAction != null)
+        {
+            Debug.Log($"JumpAction null? {ctx.JumpAction == null}");
+            ctx.JumpAction.performed += jumpPerformedHandler;
+            ctx.JumpAction.canceled += jumpCanceledHandler;
+        }
     }
 
     private void OnDisable()
     {
-        ctx.JumpAction.performed -= jumpHandler;
+        if (ctx.JumpAction != null)
+        {
+            ctx.JumpAction.performed -= jumpPerformedHandler;
+            ctx.JumpAction.canceled -= jumpCanceledHandler;
+        }
+
         ctx.PlayerMap.Disable();
     }
 
     private void Update()
     {
-        // FACT: 入力（Updateで読む）
         ctx.MoveInput = ctx.MoveAction.ReadValue<Vector2>();
+
         if (ctx.RunAction != null)
             ctx.RunHeld = ctx.RunAction.ReadValue<float>() > 0.5f;
         else
@@ -70,20 +98,23 @@ public class RobotControllerCommander : MonoBehaviour
     {
         ctx.Dt = Time.fixedDeltaTime;
 
-        // 役割の順番だけ決めて呼ぶ
         judge.Tick(ctx);
+        Debug.Log($"Grounded={ctx.IsGrounded}");
         state.Tick(ctx);
         xform.Tick(ctx);
-   
         output.Tick(ctx);
     }
-
     private void OnJumpPerformed(InputAction.CallbackContext _)
     {
-        // Update/FixedどっちでもOKだが、物理はFixedで処理するのでフラグだけ立てる
+        Debug.Log("Jump performed event fired");
         ctx.JumpPressed = true;
+        ctx.JumpHeld = true;
     }
-
+    private void OnJumpCanceled(InputAction.CallbackContext _)
+    {
+        ctx.JumpHeld = false;
+        ctx.JumpReleased = true;
+    }
     // ===== Public API =====
     public void SetConveyorVelocity(Vector3 velocity)
     {

@@ -24,38 +24,32 @@ public sealed class RobotFactsBinder
     private void BindTunables(RobotContext ctx, RobotControllerCommander c)
     {
         ctx.MoveSpeed = c.moveSpeed;
-        ctx.RunSpeed = c.moveSpeed * 1.6f;
+        ctx.RunSpeed = c.runSpeed;
         ctx.RotateSpeed = c.rotateSpeed;
-     
-        ctx.AirAccel = 12f;
+        ctx.GroundAccel = c.groundAccel;
+        ctx.AirAccel = c.airAccel;
 
-        ctx.JumpHeight = 1.4f;
-        ctx.CellSize = 1f;          
-        ctx.JumpCellsForward = 1; 
-        ctx.JumpCellsMoving = 2;  
-        ctx.JumpCellsRunning = 4;
+        ctx.JumpHeight = c.jumpHeight;
+        ctx.JumpBufferTime = c.jumpBufferTime;
+        ctx.CoyoteTime = c.coyoteTime;
+        ctx.JumpCutMultiplier = c.jumpCutMultiplier;
+        ctx.FallGravityMultiplier = c.fallGravityMultiplier;
+        ctx.LowJumpGravityMultiplier = c.lowJumpGravityMultiplier;
 
         ctx.ConveyorStickTime = c.conveyorStickTime;
 
         ctx.GroundLayer = c.groundLayer;
         ctx.GroundCheckDistance = c.groundCheckDistance;
+        ctx.GroundCheckRadius = c.groundCheckRadius;
     }
 
     private void BindInput(RobotContext ctx, RobotControllerCommander c)
     {
-        var asset = c.inputActions;
+        var map = c.inputActions.FindActionMap("Player", true);
 
-        ctx.PlayerMap = asset.FindActionMap("Player", true);
-        ctx.MoveAction = ctx.PlayerMap.FindAction("Move", true);
-        ctx.JumpAction = ctx.PlayerMap.FindAction("Jump", true);
-        ctx.RunAction = ctx.PlayerMap.FindAction("Run", false);
-    }
-    private void ConfigureRigidbody(Rigidbody rb)
-    {
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
-
-        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        ctx.PlayerMap = map;
+        ctx.MoveAction = map.FindAction("Move", true);
+        ctx.RunAction = map.FindAction("Run", false);
+        ctx.JumpAction = map.FindAction("Jump", true);
     }
 }

@@ -910,7 +910,7 @@ Transform:
   m_GameObject: {fileID: 3952967168419151396}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.019, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -931,7 +931,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -1255,14 +1255,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotControllerCommander
   cameraTransform: {fileID: 0}
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  moveSpeed: 4
-  rotateSpeed: 12
-  animator: {fileID: 567601982258029136}
-  conveyorStickTime: 0.1
   groundLayer:
     serializedVersion: 2
     m_Bits: 768
-  groundCheckDistance: 0.1
+  groundCheckDistance: 0.3
+  groundPoint: {fileID: 5452256837826634920}
+  groundCheckRadius: 0.2
+  moveSpeed: 4
+  runSpeed: 8
+  rotateSpeed: 12
+  groundAccel: 35
+  airAccel: 12
+  jumpHeight: 1.8
+  jumpBufferTime: 0.12
+  coyoteTime: 0.12
+  jumpCutMultiplier: 0.5
+  fallGravityMultiplier: 2
+  lowJumpGravityMultiplier: 2.5
+  animator: {fileID: 567601982258029136}
+  conveyorStickTime: 0.1
 --- !u!1 &7243993092378295735
 GameObject:
   m_ObjectHideFlags: 0
