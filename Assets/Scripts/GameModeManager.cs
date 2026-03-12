@@ -9,6 +9,7 @@ public class GameModeManager : MonoBehaviour
     [Header("Input")]
     [SerializeField] private InputActionAsset inputActions;
     [SerializeField] private string buildMapName = "Build";
+    [SerializeField] private string gameModeName = "GameMode";
     [SerializeField] private string toggleActionName = "ToggleMode";
 
     [Header("Refs")]
@@ -39,6 +40,7 @@ public class GameModeManager : MonoBehaviour
     private Mode mode;
 
     private InputActionMap buildMap;
+    private InputActionMap gameModeMap;
     private InputAction toggleAction;
 
     public Mode CurrentMode => mode;
@@ -50,7 +52,9 @@ public class GameModeManager : MonoBehaviour
         if (inputActions != null)
         {
             buildMap = inputActions.FindActionMap(buildMapName, true);
-            toggleAction = buildMap.FindAction(toggleActionName, true);
+
+            gameModeMap = inputActions.FindActionMap(gameModeName, true);
+            toggleAction = gameModeMap.FindAction(toggleActionName, true);
         }
 
         if (mainCamera == null)

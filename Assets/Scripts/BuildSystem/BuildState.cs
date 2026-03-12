@@ -1,75 +1,67 @@
 using UnityEngine;
 
-/// <summary>
-/// STATE
-/// - 「今どうなっているか」だけを保持する
-/// - 判断ロジックは一切しない
-/// </summary>
 public class BuildState
 {
-    // Tool state
+    public int SelectedObjectID { get; private set; }
     public BuildController.PlaceToolMode PlaceTool { get; private set; }
 
-    // Selection state
-    public int SelectedObjectID { get; private set; }
-
-    // Line tool state
+    // ---------- Line ----------
     public bool HasLineStart { get; private set; }
     public Vector3Int LineStartCell { get; private set; }
-    public bool HasMoveTarget { get; private set; }
+
+    // ---------- Move ----------
     public BlockInstance MoveTarget { get; private set; }
+    public bool HasMoveTarget => MoveTarget != null;
 
-    
-    public BuildState(int initialSelectedId, BuildController.PlaceToolMode initialTool)
+    // ---------- Rotation ----------
+    // 0=0°, 1=90°, 2=180°, 3=270°
+    public int RotationStep { get; private set; } = 0;
+    public Quaternion CurrentRotation => Quaternion.Euler(0f, RotationStep * 90f, 0f);
+
+    public BuildState(int initialSelectedObjectID, BuildController.PlaceToolMode initialTool)
     {
-        SelectedObjectID = initialSelectedId;
+        SelectedObjectID = initialSelectedObjectID;
         PlaceTool = initialTool;
-        CancelLine();
-    }
-    public void BeginMove(BlockInstance t) { HasMoveTarget = true; MoveTarget = t; }
-    public void CancelMove() { HasMoveTarget = false; MoveTarget = null; }
-    // -------------------------
-    // Tool
-    // -------------------------
-    public void SetTool(BuildController.PlaceToolMode tool)
-    {
-        PlaceTool = tool;
-        CancelLine();
     }
 
+    // -------------------------------------------------------
+    // Tool
+    // -------------------------------------------------------
     public void ToggleTool()
     {
         PlaceTool = (PlaceTool == BuildController.PlaceToolMode.Single)
             ? BuildController.PlaceToolMode.Line
             : BuildController.PlaceToolMode.Single;
-
-        CancelLine();
     }
 
-    // -------------------------
+    public void SetTool(BuildController.PlaceToolMode tool)
+    {
+        PlaceTool = tool;
+    }
+
+    // -------------------------------------------------------
     // Selection
-    // -------------------------
+    // -------------------------------------------------------
     public void SetSelectedObjectID(int id)
     {
         SelectedObjectID = id;
-        CancelLine();
     }
 
     public void StepSelection(int delta, int count)
     {
         if (count <= 0) return;
 
-        int id = SelectedObjectID + delta;
-        if (id < 0) id = count - 1;
-        else if (id >= count) id = 0;
+        SelectedObjectID += delta;
 
-        SelectedObjectID = id;
-        CancelLine();
+        if (SelectedObjectID < 0)
+            SelectedObjectID = count - 1;
+        else if (SelectedObjectID >= count)
+            SelectedObjectID = 0;
     }
 
-    // -------------------------
+    // -------------------------------------------------------
     // Line
-    // -------------------------
+    // -------------------------------------------------------
     public void BeginLine(Vector3Int startCell)
     {
         HasLineStart = true;
@@ -80,5 +72,36 @@ public class BuildState
     {
         HasLineStart = false;
         LineStartCell = default;
+    }
+
+    // -------------------------------------------------------
+    // Move
+    // -------------------------------------------------------
+    public void BeginMove(BlockInstance target)
+    {
+        MoveTarget = target;
+    }
+
+    public void CancelMove()
+    {
+        MoveTarget = null;
+    }
+
+    // -------------------------------------------------------
+    // Rotation
+    // -------------------------------------------------------
+    public void RotateCW()
+    {
+        RotationStep = (RotationStep + 1) % 4;
+    }
+
+    public void RotateCCW()
+    {
+        RotationStep = (RotationStep + 3) % 4;
+    }
+
+    public void ResetRotation()
+    {
+        RotationStep = 0;
     }
 }

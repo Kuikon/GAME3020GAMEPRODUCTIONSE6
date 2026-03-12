@@ -7,10 +7,37 @@ public class ObjectsDatabaseSO : ScriptableObject
 {
     public List<ObjectData> objectsData = new();
 
+    public IReadOnlyList<ObjectData> Objects => objectsData;
+
     public bool TryGetByID(int id, out ObjectData data)
     {
-        data = objectsData.Find(o => o.ID == id);
-        return data != null;
+        for (int i = 0; i < objectsData.Count; i++)
+        {
+            if (objectsData[i] != null && objectsData[i].ID == id)
+            {
+                data = objectsData[i];
+                return true;
+            }
+        }
+
+        data = null;
+        return false;
+    }
+
+    public List<ObjectData> GetByCategory(ObjectCategory category)
+    {
+        List<ObjectData> result = new List<ObjectData>();
+
+        for (int i = 0; i < objectsData.Count; i++)
+        {
+            ObjectData obj = objectsData[i];
+            if (obj == null) continue;
+
+            if (obj.Category == category)
+                result.Add(obj);
+        }
+
+        return result;
     }
 }
 
@@ -25,4 +52,5 @@ public class ObjectData
 
     [field: SerializeField] public GameObject Prefab { get; private set; }
     [field: SerializeField] public bool IsBoxShape { get; private set; }
+    [field: SerializeField] public ObjectCategory Category = ObjectCategory.None;
 }

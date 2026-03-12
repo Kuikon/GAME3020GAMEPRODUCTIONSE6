@@ -23,7 +23,9 @@ public class BuildController : MonoBehaviour
     [SerializeField] private InputActionReference placeAction;        // LMB
     [SerializeField] private InputActionReference removeAction;       // RMB
     [SerializeField] private InputActionReference moveAction;         // e.g. MMB or key
-    [SerializeField] private InputActionReference toggleToolAction;   // e.g. Tab (Single <-> Line)
+    [SerializeField] private InputActionReference toggleToolAction;   // e.g. Tab
+    [SerializeField] private InputActionReference rotateCWAction;     // e.g. E
+    [SerializeField] private InputActionReference rotateCCWAction;    // e.g. Q
 
     [Header("Undo/Redo")]
     [SerializeField] private InputActionReference undoAction; // Ctrl+Z
@@ -44,8 +46,11 @@ public class BuildController : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
+
+    public int SelectedObjectID => state != null ? state.SelectedObjectID : initialSelectedObjectID;
     public BuildPlacementRules Rules => rules;
     public BuildSpawner Spawner => spawner;
+
     // Parts
     private BuildRaycaster raycaster;
     private BuildPlacementSolver solver;
@@ -86,7 +91,7 @@ public class BuildController : MonoBehaviour
 
         preview?.Clear();
         state?.CancelLine();
-        state?.CancelMove(); // ★ Move中も安全に解除（BuildStateにCancelMoveがある前提）
+        state?.CancelMove();
     }
 
     private void Update()
@@ -112,6 +117,7 @@ public class BuildController : MonoBehaviour
         if (previewMaterial == null) Debug.LogWarning("BuildController: previewMaterial is not assigned.");
         if (grid == null) Debug.LogWarning("BuildController: grid is not assigned.");
         if (database == null) Debug.LogWarning("BuildController: database is not assigned.");
+        if (cam == null) Debug.LogWarning("BuildController: cam is not assigned.");
     }
 
     private void EnableActions(bool enable)
@@ -120,6 +126,8 @@ public class BuildController : MonoBehaviour
         SetActionEnabled(removeAction, enable);
         SetActionEnabled(moveAction, enable);
         SetActionEnabled(toggleToolAction, enable);
+        SetActionEnabled(rotateCWAction, enable);
+        SetActionEnabled(rotateCCWAction, enable);
         SetActionEnabled(undoAction, enable);
         SetActionEnabled(redoAction, enable);
     }
@@ -130,6 +138,8 @@ public class BuildController : MonoBehaviour
         HookPerformed(removeAction, subscribe, OnRemovePerformed);
         HookPerformed(moveAction, subscribe, OnMovePerformed);
         HookPerformed(toggleToolAction, subscribe, OnToggleToolPerformed);
+        HookPerformed(rotateCWAction, subscribe, OnRotateCWPerformed);
+        HookPerformed(rotateCCWAction, subscribe, OnRotateCCWPerformed);
         HookPerformed(undoAction, subscribe, OnUndoPerformed);
         HookPerformed(redoAction, subscribe, OnRedoPerformed);
     }
@@ -137,6 +147,7 @@ public class BuildController : MonoBehaviour
     private static void SetActionEnabled(InputActionReference a, bool enable)
     {
         if (a == null || a.action == null) return;
+
         if (enable) a.action.Enable();
         else a.action.Disable();
     }
@@ -144,6 +155,7 @@ public class BuildController : MonoBehaviour
     private static void HookPerformed(InputActionReference a, bool subscribe, System.Action<InputAction.CallbackContext> cb)
     {
         if (a == null || a.action == null || cb == null) return;
+
         if (subscribe) a.action.performed += cb;
         else a.action.performed -= cb;
     }
@@ -166,22 +178,44 @@ public class BuildController : MonoBehaviour
         Log($"Place Tool: {state.PlaceTool}");
     }
 
+    private void OnRotateCWPerformed(InputAction.CallbackContext _)
+    {
+        if (IsPointerOverUI()) return;
+
+        state.RotateCW();
+        preview?.Clear();
+        Log($"Rotate CW: {state.CurrentRotation.eulerAngles}");
+    }
+
+    private void OnRotateCCWPerformed(InputAction.CallbackContext _)
+    {
+        if (IsPointerOverUI()) return;
+
+        state.RotateCCW();
+        preview?.Clear();
+        Log($"Rotate CCW: {state.CurrentRotation.eulerAngles}");
+    }
+
     private void OnPlacePerformed(InputAction.CallbackContext _)
     {
         if (IsPointerOverUI()) return;
 
         if (!TryGetSelectedData(out var data)) return;
+
+        Quaternion rot = GetCurrentRotation();
+        Vector3Int rotatedSize = GetRotatedSize(data.SizeXYZ, rot);
+
         RaycastHit hit;
         Vector3Int cell;
-        if (!TryGetHoverCell(data.SizeXYZ, out cell, out hit)) return;
+        if (!TryGetHoverCell(rotatedSize, out cell, out hit)) return;
 
         if (state.PlaceTool == PlaceToolMode.Single)
         {
-            HandleSinglePlace(cell, data);
+            HandleSinglePlace(cell, data, rot, rotatedSize);
             return;
         }
 
-        HandleLinePlace(cell, data);
+        HandleLinePlace(cell, data, rot, rotatedSize);
     }
 
     private void OnRemovePerformed(InputAction.CallbackContext _)
@@ -200,27 +234,25 @@ public class BuildController : MonoBehaviour
     {
         if (IsPointerOverUI()) return;
 
-        // 1st click: select target
         if (!state.HasMoveTarget)
         {
             TrySelectMoveTarget();
             return;
         }
 
-        // 2nd click: choose destination and execute
         TryCommitMove();
     }
 
     // -------------------------------------------------------
     // Place handlers
     // -------------------------------------------------------
-    private void HandleSinglePlace(Vector3Int originCell, ObjectData data)
+    private void HandleSinglePlace(Vector3Int originCell, ObjectData data, Quaternion rot, Vector3Int rotatedSize)
     {
-        PlaceSelected(originCell, data);
+        PlaceSelected(originCell, data, rot, rotatedSize);
         preview?.Clear();
     }
 
-    private void HandleLinePlace(Vector3Int cell, ObjectData data)
+    private void HandleLinePlace(Vector3Int cell, ObjectData data, Quaternion rot, Vector3Int rotatedSize)
     {
         if (!rules.CanUseLineTool(data, out var reason))
         {
@@ -228,7 +260,6 @@ public class BuildController : MonoBehaviour
             return;
         }
 
-        // 1st click
         if (!state.HasLineStart)
         {
             state.BeginLine(cell);
@@ -236,17 +267,14 @@ public class BuildController : MonoBehaviour
             return;
         }
 
-        // 2nd click: compute line cells
-        if (!solver.TryGetLineCellsOrthogonal(state.LineStartCell, cell, data.SizeXYZ, out var lineCells))
+        if (!solver.TryGetLineCellsOrthogonal(state.LineStartCell, cell, rotatedSize, out var lineCells))
         {
             state.CancelLine();
             preview?.Clear();
             return;
         }
 
-        // commit
         var group = new CompositeCommand($"Line Place {data.Name}");
-        Quaternion rot = Quaternion.identity;
 
         foreach (var c in lineCells)
             group.Add(new PlaceCommand(grid, spawner, rules, c, data, rot));
@@ -297,18 +325,16 @@ public class BuildController : MonoBehaviour
     // -------------------------------------------------------
     // Place / Remove core
     // -------------------------------------------------------
-    private void PlaceSelected(Vector3Int originCell, ObjectData data)
+    private void PlaceSelected(Vector3Int originCell, ObjectData data, Quaternion rot, Vector3Int rotatedSize)
     {
-        if (!rules.CanPlace(originCell, data.SizeXYZ, out _)) return;
+        if (!rules.CanPlace(originCell, rotatedSize, out _)) return;
 
-        Quaternion rot = Quaternion.identity;
         var cmd = new PlaceCommand(grid, spawner, rules, originCell, data, rot);
         history.Do(cmd, debugLogs);
     }
 
     private void RemoveAtCell(Vector3Int anyCell)
     {
-        // TryGetObjectAtCell の戻り値は、必要ならUI表示に使える
         var cmd = new RemoveCommand(grid, spawner, rules, database, anyCell);
         history.Do(cmd, debugLogs);
     }
@@ -331,6 +357,7 @@ public class BuildController : MonoBehaviour
 
         if (!raycaster.RaycastForPlace(out hit)) return false;
         if (!solver.TrySolveOriginCell(hit, placeSize, out hoverCell)) return false;
+
         return true;
     }
 
@@ -351,14 +378,22 @@ public class BuildController : MonoBehaviour
         Log("Place Tool: Line");
     }
 
+    public void UI_RotateCW()
+    {
+        state?.RotateCW();
+        preview?.Clear();
+        Log("Rotate CW");
+    }
+
+    public void UI_RotateCCW()
+    {
+        state?.RotateCCW();
+        preview?.Clear();
+        Log("Rotate CCW");
+    }
+
     public void UI_NextItem() => StepSelection(+1);
     public void UI_PrevItem() => StepSelection(-1);
-
-    public void SetSelectedObjectID(int id)
-    {
-        state?.SetSelectedObjectID(id);
-        preview?.Clear();
-    }
 
     private void StepSelection(int delta)
     {
@@ -369,6 +404,13 @@ public class BuildController : MonoBehaviour
 
         Log($"Selected Object ID: {state.SelectedObjectID}");
         preview?.Clear();
+    }
+
+    public void SetSelectedObject(int objectID)
+    {
+        state?.SetSelectedObjectID(objectID);
+        preview?.Clear();
+        Log($"[BuildController] SelectedObjectID = {objectID}");
     }
 
     // -------------------------------------------------------
@@ -382,7 +424,10 @@ public class BuildController : MonoBehaviour
             return;
         }
 
-        if (!TryGetHoverCell(data.SizeXYZ, out var hoverCell, out _))
+        Quaternion rot = GetCurrentRotation();
+        Vector3Int rotatedSize = GetRotatedSize(data.SizeXYZ, rot);
+
+        if (!TryGetHoverCell(rotatedSize, out var hoverCell, out _))
         {
             preview?.Clear();
             return;
@@ -392,57 +437,74 @@ public class BuildController : MonoBehaviour
 
         if (state.PlaceTool == PlaceToolMode.Single)
         {
-            ShowSinglePreview(hoverCell, data.SizeXYZ);
+            ShowSinglePreview(hoverCell, rotatedSize, rot);
             return;
         }
 
-        ShowLinePreview(hoverCell, data);
+        ShowLinePreview(hoverCell, data, rotatedSize, rot);
     }
 
-    private void ShowSinglePreview(Vector3Int cell, Vector3Int size)
+    private void ShowSinglePreview(Vector3Int cell, Vector3Int size, Quaternion rot)
     {
-        preview.ShowSingle(cell, size);
+        preview.ShowSingle(cell, size, rot);
+
         bool canPlace = rules.CanPlace(cell, size, out _);
         preview.SetValid(canPlace);
     }
 
-    private void ShowLinePreview(Vector3Int hoverCell, ObjectData data)
+    private void ShowLinePreview(Vector3Int hoverCell, ObjectData data, Vector3Int rotatedSize, Quaternion rot)
     {
-        // Line tool not allowed
         if (!rules.CanUseLineTool(data, out _))
         {
-            preview.ShowSingle(hoverCell, data.SizeXYZ);
+            preview.ShowSingle(hoverCell, rotatedSize, rot);
             preview.SetValid(false);
             return;
         }
 
-        // before start click: single candidate
         if (!state.HasLineStart)
         {
-            ShowSinglePreview(hoverCell, data.SizeXYZ);
+            ShowSinglePreview(hoverCell, rotatedSize, rot);
             return;
         }
 
-        // after start click: show line
-        if (!solver.TryGetLineCellsOrthogonal(state.LineStartCell, hoverCell, data.SizeXYZ, out var lineCells) ||
+        if (!solver.TryGetLineCellsOrthogonal(state.LineStartCell, hoverCell, rotatedSize, out var lineCells) ||
             lineCells == null || lineCells.Count == 0)
         {
             preview.ClearActiveOnly();
             return;
         }
 
-        preview.ShowLine(lineCells, data.SizeXYZ);
+        preview.ShowLine(lineCells, rotatedSize, rot);
 
         bool allPlaceable = true;
         foreach (var c in lineCells)
         {
-            if (!rules.CanPlace(c, data.SizeXYZ, out _))
+            if (!rules.CanPlace(c, rotatedSize, out _))
             {
                 allPlaceable = false;
                 break;
             }
         }
+
         preview.SetValid(allPlaceable);
+    }
+
+    // -------------------------------------------------------
+    // Rotation helpers
+    // -------------------------------------------------------
+    private Quaternion GetCurrentRotation()
+    {
+        return state != null ? state.CurrentRotation : Quaternion.identity;
+    }
+
+    private Vector3Int GetRotatedSize(Vector3Int originalSize, Quaternion rot)
+    {
+        float y = Mathf.Round(rot.eulerAngles.y) % 360f;
+
+        if (Mathf.Approximately(y, 90f) || Mathf.Approximately(y, 270f))
+            return new Vector3Int(originalSize.z, originalSize.y, originalSize.x);
+
+        return originalSize;
     }
 
     // -------------------------------------------------------

@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
 public class HammerTrap : MonoBehaviour
 {
     [Header("Trigger")]
@@ -17,8 +16,8 @@ public class HammerTrap : MonoBehaviour
     [SerializeField] private float shakeSpeed = 18f;
 
     [Header("Drop")]
-    [SerializeField] private float waitAfterHitGround = 1.0f; // ★ 地面に当たってから戻るまで
-    [SerializeField] private float resetMoveSpeed = 6f;       // ★ 戻る速さ
+    [SerializeField] private float waitAfterHitGround = 1.0f; 
+    [SerializeField] private float resetMoveSpeed = 6f;    
 
     private Rigidbody rb;
 
@@ -33,7 +32,7 @@ public class HammerTrap : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
 
-        // 最初は固定
+
         rb.useGravity = false;
         rb.isKinematic = true;
 
@@ -57,9 +56,6 @@ public class HammerTrap : MonoBehaviour
         StartCoroutine(ShakeThenDrop());
     }
 
-    // -----------------------------
-    // 1) 揺れる → 落ちる
-    // -----------------------------
     private IEnumerator ShakeThenDrop()
     {
         float t = 0f;
@@ -76,15 +72,11 @@ public class HammerTrap : MonoBehaviour
 
         transform.rotation = startRot;
 
-        // 落下開始
         dropping = true;
         rb.isKinematic = false;
         rb.useGravity = true;
     }
 
-    // -----------------------------
-    // 2) 地面に当たる
-    // -----------------------------
     private void OnCollisionEnter(Collision collision)
     {
         if (!dropping) return;
@@ -103,9 +95,6 @@ public class HammerTrap : MonoBehaviour
         StartCoroutine(ResetAfterDelay());
     }
 
-    // -----------------------------
-    // 3) 1秒後に元の位置へ戻る
-    // -----------------------------
     private IEnumerator ResetAfterDelay()
     {
         resetting = true;
@@ -129,7 +118,6 @@ public class HammerTrap : MonoBehaviour
             yield return null;
         }
 
-        // 完全リセット
         transform.position = startPos;
         transform.rotation = startRot;
 

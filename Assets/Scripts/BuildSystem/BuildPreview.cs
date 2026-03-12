@@ -6,16 +6,11 @@ public class BuildPreview
     private readonly GridManager grid;
     private readonly Material previewMaterial;
 
-    // ★単体 → 複数へ（プール）
-    private readonly List<GameObject> previewPool = new();
+    private GameObject singlePreview;
+    private readonly List<GameObject> linePreviews = new List<GameObject>();
 
-    private int currentID = int.MinValue;
-
-    private static readonly int ColorID = Shader.PropertyToID("_Color");
-    private static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
-
-    // pool全体のRendererに色を当てたいので、毎回集める
-    private Renderer[] cachedRenderers;
+    private ObjectData currentSelectedData;
+    private bool lastValid = true;
 
     public BuildPreview(GridManager grid, Material previewMaterial)
     {
@@ -23,210 +18,204 @@ public class BuildPreview
         this.previewMaterial = previewMaterial;
     }
 
-    // -------------------------
-    // Selection
-    // -------------------------
     public void SetSelected(ObjectData data)
     {
-        if (data == null || data.Prefab == null)
-        {
-            Clear();
+        if (currentSelectedData == data) return;
+
+        currentSelectedData = data;
+        RebuildAll();
+    }
+
+    public void ShowSingle(Vector3Int cell, Vector3Int size, Quaternion rot)
+    {
+        if (grid == null || currentSelectedData == null || currentSelectedData.Prefab == null)
             return;
-        }
 
-        // 同じIDで、すでにpreviewがあるなら作り直さない
-        if (data.ID == currentID && previewPool.Count > 0) return;
+        EnsureSinglePreview();
 
-        currentID = data.ID;
+        if (singlePreview == null) return;
 
-        // 選択が変わったら pool を作り直す（初心者向けに安全なやり方）
-        DestroyAll();
+        singlePreview.transform.position = grid.BoxToWorldCenter(cell, size);
+        singlePreview.transform.rotation = rot;
+        singlePreview.SetActive(true);
 
-        // 最低1個は作る（Single用）
-        var first = CreatePreviewInstance(data);
-        previewPool.Add(first);
-
-        RebuildRendererCache();
-    }
-
-    // -------------------------
-    // Show Single / Line
-    // -------------------------
-    public void ShowSingle(Vector3Int originCell, Vector3Int sizeXYZ)
-    {
-        if (previewPool.Count == 0) return;
-
-        EnsurePoolSize(1);
-
-        // 0番だけ表示
-        for (int i = 0; i < previewPool.Count; i++)
-            previewPool[i].SetActive(i == 0);
-
-        ApplyPose(previewPool[0], originCell, sizeXYZ);
-        RebuildRendererCache();
-    }
-
-    public void ShowLine(List<Vector3Int> lineCells, Vector3Int sizeXYZ)
-    {
-        if (lineCells == null || lineCells.Count == 0)
+        for (int i = 0; i < linePreviews.Count; i++)
         {
-            ClearActiveOnly();
+            if (linePreviews[i] != null)
+                linePreviews[i].SetActive(false);
+        }
+    }
+
+    public void ShowLine(List<Vector3Int> cells, Vector3Int size, Quaternion rot)
+    {
+        if (grid == null || currentSelectedData == null || currentSelectedData.Prefab == null)
             return;
-        }
 
-        EnsurePoolSize(lineCells.Count);
+        EnsureLineCount(cells.Count);
 
-        for (int i = 0; i < previewPool.Count; i++)
+        if (singlePreview != null)
+            singlePreview.SetActive(false);
+
+        for (int i = 0; i < linePreviews.Count; i++)
         {
-            bool active = i < lineCells.Count;
-            previewPool[i].SetActive(active);
+            if (linePreviews[i] == null) continue;
 
-            if (active)
-                ApplyPose(previewPool[i], lineCells[i], sizeXYZ);
-        }
+            bool active = i < cells.Count;
+            linePreviews[i].SetActive(active);
 
-        RebuildRendererCache();
-    }
+            if (!active) continue;
 
-    private void ApplyPose(GameObject obj, Vector3Int originCell, Vector3Int sizeXYZ)
-    {
-        if (obj == null || grid == null) return;
-
-        Vector3 center = grid.BoxToWorldCenter(originCell, sizeXYZ);
-        obj.transform.position = center;
-        obj.transform.rotation = Quaternion.identity;
-    }
-
-    // -------------------------
-    // Valid Color
-    // -------------------------
-    public void SetValid(bool canPlace)
-    {
-        if (cachedRenderers == null) return;
-
-        Color c = canPlace
-            ? new Color(1f, 1f, 1f, 0.1f)
-            : new Color(1f, 0.2f, 0.2f, 0.1f);
-
-        var mpb = new MaterialPropertyBlock();
-        mpb.SetColor(ColorID, c);
-        mpb.SetColor(BaseColorID, c);
-
-        foreach (var r in cachedRenderers)
-        {
-            if (r == null) continue;
-            r.SetPropertyBlock(mpb);
+            linePreviews[i].transform.position = grid.BoxToWorldCenter(cells[i], size);
+            linePreviews[i].transform.rotation = rot;
         }
     }
 
-    // -------------------------
-    // Clear
-    // -------------------------
+    public void SetValid(bool valid)
+    {
+        if (lastValid == valid) return;
+        lastValid = valid;
+
+        ApplyColor(singlePreview, valid);
+
+        for (int i = 0; i < linePreviews.Count; i++)
+            ApplyColor(linePreviews[i], valid);
+    }
+
     public void Clear()
     {
-        currentID = int.MinValue;
-        DestroyAll();
-        cachedRenderers = null;
+        if (singlePreview != null)
+            singlePreview.SetActive(false);
+
+        for (int i = 0; i < linePreviews.Count; i++)
+        {
+            if (linePreviews[i] != null)
+                linePreviews[i].SetActive(false);
+        }
     }
 
-    // ★選択は維持したまま “表示だけ消す”
     public void ClearActiveOnly()
     {
-        for (int i = 0; i < previewPool.Count; i++)
+        Clear();
+    }
+
+    // -------------------------------------------------------
+    private void RebuildAll()
+    {
+        DestroyGO(singlePreview);
+        singlePreview = null;
+
+        for (int i = 0; i < linePreviews.Count; i++)
+            DestroyGO(linePreviews[i]);
+
+        linePreviews.Clear();
+    }
+
+    private void EnsureSinglePreview()
+    {
+        if (singlePreview != null) return;
+        singlePreview = CreatePreviewObject();
+    }
+
+    private void EnsureLineCount(int count)
+    {
+        while (linePreviews.Count < count)
         {
-            if (previewPool[i] != null)
-                previewPool[i].SetActive(false);
+            linePreviews.Add(CreatePreviewObject());
         }
     }
 
-    private void DestroyAll()
+    private GameObject CreatePreviewObject()
     {
-        for (int i = 0; i < previewPool.Count; i++)
-        {
-            if (previewPool[i] != null)
-                Object.Destroy(previewPool[i]);
-        }
-        previewPool.Clear();
+        if (currentSelectedData == null || currentSelectedData.Prefab == null)
+            return null;
+
+        GameObject go = Object.Instantiate(currentSelectedData.Prefab);
+        go.name = currentSelectedData.Prefab.name + "_Preview";
+
+        StripComponentsForPreview(go);
+        ApplyPreviewMaterial(go);
+        ApplyColor(go, lastValid);
+
+        go.SetActive(false);
+        return go;
     }
 
-    // -------------------------
-    // Pool helpers
-    // -------------------------
-    private void EnsurePoolSize(int needed)
+    private void StripComponentsForPreview(GameObject go)
     {
-        if (previewPool.Count == 0) return;
+        if (go == null) return;
 
-        // 0番を複製して増やす
-        while (previewPool.Count < needed)
+        var colliders = go.GetComponentsInChildren<Collider>(true);
+        foreach (var c in colliders)
+            Object.Destroy(c);
+
+        var rigidbodies = go.GetComponentsInChildren<Rigidbody>(true);
+        foreach (var rb in rigidbodies)
+            Object.Destroy(rb);
+
+        var blockInstances = go.GetComponentsInChildren<BlockInstance>(true);
+        foreach (var bi in blockInstances)
+            Object.Destroy(bi);
+
+        var behaviours = go.GetComponentsInChildren<MonoBehaviour>(true);
+        foreach (var b in behaviours)
         {
-            var clone = Object.Instantiate(previewPool[0]);
-            clone.name = previewPool[0].name + "_Clone";
-            previewPool.Add(clone);
+            if (b == null) continue;
+            if (b is Transform) continue;
+            b.enabled = false;
         }
     }
 
-    private void RebuildRendererCache()
+    private void ApplyPreviewMaterial(GameObject go)
     {
-        var list = new List<Renderer>();
+        if (go == null || previewMaterial == null) return;
 
-        foreach (var obj in previewPool)
+        var renderers = go.GetComponentsInChildren<Renderer>(true);
+        foreach (var r in renderers)
         {
-            if (obj == null) continue;
-            list.AddRange(obj.GetComponentsInChildren<Renderer>(true));
-        }
+            if (r == null) continue;
 
-        cachedRenderers = list.ToArray();
+            var mats = new Material[r.sharedMaterials.Length];
+            for (int i = 0; i < mats.Length; i++)
+                mats[i] = previewMaterial;
+
+            r.sharedMaterials = mats;
+        }
     }
 
-    // -------------------------
-    // Create preview instance (あなたのロジックをそのまま利用)
-    // -------------------------
-    private GameObject CreatePreviewInstance(ObjectData data)
+    private void ApplyColor(GameObject go, bool valid)
     {
-        var previewObj = Object.Instantiate(data.Prefab);
-        previewObj.name = $"PREVIEW_{data.Name}_ID{data.ID}";
+        if (go == null) return;
 
-        ForceLayerRecursive(previewObj, "Preview");
+        Color color = valid
+            ? new Color(0f, 1f, 0f, 0.35f)
+            : new Color(1f, 0f, 0f, 0.35f);
 
-        foreach (var col in previewObj.GetComponentsInChildren<Collider>(true))
-            col.enabled = false;
-
-        foreach (var rb in previewObj.GetComponentsInChildren<Rigidbody>(true))
-            rb.isKinematic = true;
-
-        foreach (var anim in previewObj.GetComponentsInChildren<Animator>(true))
-            anim.enabled = false;
-
-        // マテリアル差し替え（全Rendererスロットに previewMaterial）
-        if (previewMaterial != null)
+        var renderers = go.GetComponentsInChildren<Renderer>(true);
+        foreach (var r in renderers)
         {
-            var renderers = previewObj.GetComponentsInChildren<Renderer>(true);
-            foreach (var r in renderers)
+            if (r == null) continue;
+
+            var mats = r.materials;
+            for (int i = 0; i < mats.Length; i++)
             {
-                if (r == null) continue;
+                if (mats[i] == null) continue;
 
-                int slots = (r.sharedMaterials != null && r.sharedMaterials.Length > 0)
-                    ? r.sharedMaterials.Length
-                    : 1;
+                if (mats[i].HasProperty("_Color"))
+                    mats[i].color = color;
 
-                var mats = new Material[slots];
-                for (int i = 0; i < slots; i++)
-                    mats[i] = previewMaterial;
-
-                r.sharedMaterials = mats;
+                if (mats[i].HasProperty("_BaseColor"))
+                    mats[i].SetColor("_BaseColor", color);
             }
         }
-
-        return previewObj;
     }
 
-    private static void ForceLayerRecursive(GameObject obj, string layerName)
+    private void DestroyGO(GameObject go)
     {
-        int layer = LayerMask.NameToLayer(layerName);
-        if (layer < 0) return;
+        if (go == null) return;
 
-        obj.layer = layer;
-        foreach (Transform t in obj.GetComponentsInChildren<Transform>(true))
-            t.gameObject.layer = layer;
+        if (Application.isPlaying)
+            Object.Destroy(go);
+        else
+            Object.DestroyImmediate(go);
     }
 }

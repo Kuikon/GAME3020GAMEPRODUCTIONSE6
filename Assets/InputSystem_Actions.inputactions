@@ -1033,118 +1033,6 @@
             ]
         },
         {
-            "name": "Cannon",
-            "id": "26450681-1a24-4df5-87f0-b4dedb6f4d0f",
-            "actions": [
-                {
-                    "name": "Fire",
-                    "type": "Button",
-                    "id": "a33c3c5f-30aa-496d-a2e7-05eacd8073a5",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "CannonPitch",
-                    "type": "Value",
-                    "id": "63052346-b3b0-403b-afad-f2815ef71034",
-                    "expectedControlType": "Axis",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
-                    "name": "CannonYaw",
-                    "type": "Button",
-                    "id": "41a5939a-edfa-4338-9c07-839bde94c3d4",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                }
-            ],
-            "bindings": [
-                {
-                    "name": "",
-                    "id": "2a746c57-0223-48ba-9f7d-2e1a2cb0ff02",
-                    "path": "<Keyboard>/e",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Gamepad;Keyboard&Mouse",
-                    "action": "Fire",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "1D Axis",
-                    "id": "7d38fb30-eb83-4964-a676-a2853f3c5898",
-                    "path": "1DAxis",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "CannonPitch",
-                    "isComposite": true,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "negative",
-                    "id": "3455325b-a11e-4cab-9302-00a369248905",
-                    "path": "<Mouse>/scroll/down",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "CannonPitch",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "positive",
-                    "id": "a5f50627-55ed-401d-ad07-e031f630d0a5",
-                    "path": "<Mouse>/scroll/up",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "CannonPitch",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "1D Axis",
-                    "id": "96570ca2-761d-4784-a813-d9e8ae2fcc6b",
-                    "path": "1DAxis",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "CannonYaw",
-                    "isComposite": true,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "negative",
-                    "id": "bf534742-0982-4ec9-af51-7bf7d5551c74",
-                    "path": "<Mouse>/delta/left",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "CannonYaw",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "positive",
-                    "id": "adced760-cec8-4725-b9a7-72131002a35d",
-                    "path": "<Mouse>/delta/right",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "CannonYaw",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                }
-            ]
-        },
-        {
             "name": "Build",
             "id": "4c68be95-6830-473a-8134-b808a565764f",
             "actions": [
@@ -1170,15 +1058,6 @@
                     "name": "Remove",
                     "type": "Button",
                     "id": "ba85272f-19a6-4698-acde-6bf99b0b3be5",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
-                    "name": "ToggleGameMode",
-                    "type": "Button",
-                    "id": "05e7f7d6-74af-4ee2-be85-a9604f9febd6",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -1264,6 +1143,24 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "RotateRight",
+                    "type": "Button",
+                    "id": "6addc9c2-5740-48d9-b5fc-b0f21ad24bcf",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "RotateLeft",
+                    "type": "Button",
+                    "id": "3292e6d7-4443-405e-958d-70cf0c35ab35",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -1297,17 +1194,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "Remove",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "c46db562-c608-4215-adea-ec4632d9404f",
-                    "path": "<Keyboard>/tab",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "ToggleGameMode",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -1368,19 +1254,8 @@
                 },
                 {
                     "name": "",
-                    "id": "406f6674-d73a-4f98-8591-18254f38a621",
-                    "path": "<Mouse>/delta",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "LookRoom",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "7a4a0355-1372-4924-b596-61d49ffb97a4",
-                    "path": "<Keyboard>/e",
+                    "path": "<Keyboard>/i",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -1391,7 +1266,7 @@
                 {
                     "name": "",
                     "id": "c785561c-c476-4211-99a7-6c4373530cf6",
-                    "path": "<Keyboard>/q",
+                    "path": "<Keyboard>/k",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -1451,6 +1326,111 @@
                     "processors": "",
                     "groups": "",
                     "action": "MoveBlock",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "2D Vector",
+                    "id": "21dcebba-2194-4407-b28a-d5e859dbed23",
+                    "path": "2DVector",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LookRoom",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "up",
+                    "id": "8cefbbf0-b1a5-46b4-ac3e-4c9c2b09331f",
+                    "path": "<Keyboard>/i",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LookRoom",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "down",
+                    "id": "44e290d7-52e6-48d7-9f12-2a25b53692f5",
+                    "path": "<Keyboard>/k",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LookRoom",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "left",
+                    "id": "94ae5b8d-e1b0-4c95-b718-ab2c944a54fb",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LookRoom",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "right",
+                    "id": "bf013018-c0dc-44dc-b089-30483fcc9533",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LookRoom",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "e7141ec1-19e5-4dce-9c1a-d1c2d69a255b",
+                    "path": "<Keyboard>/c",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RotateRight",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "957b64f2-2dd1-4431-b975-e0c28217c8de",
+                    "path": "<Keyboard>/z",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RotateLeft",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "GameMode",
+            "id": "c2187f5e-64b9-4b95-9cf7-d5b6573033c4",
+            "actions": [
+                {
+                    "name": "ToggleGameMode",
+                    "type": "Button",
+                    "id": "dcd8a483-50c9-48f2-bd4d-34ffddf1637e",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "a56df0c5-5578-4ac4-92b5-3c57def4fd66",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleGameMode",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

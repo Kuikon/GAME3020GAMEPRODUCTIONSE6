@@ -6,7 +6,6 @@ public class RemoveCommand : IBuildCommand
     private readonly BuildSpawner spawner;
     private readonly BuildPlacementRules rules;
     private readonly ObjectsDatabaseSO database;
-    private readonly BlockInstance directTarget;
     private readonly Vector3Int anyCell;
 
     private int removedID;
@@ -16,8 +15,12 @@ public class RemoveCommand : IBuildCommand
 
     public string Name => $"Remove @ {anyCell}";
 
-    public RemoveCommand(GridManager grid, BuildSpawner spawner, BuildPlacementRules rules,
-                         ObjectsDatabaseSO database, Vector3Int anyCell)
+    public RemoveCommand(
+        GridManager grid,
+        BuildSpawner spawner,
+        BuildPlacementRules rules,
+        ObjectsDatabaseSO database,
+        Vector3Int anyCell)
     {
         this.grid = grid;
         this.spawner = spawner;
@@ -38,12 +41,10 @@ public class RemoveCommand : IBuildCommand
         if (bi == null)
             return false;
 
-
         removedID = bi.ObjectID;
         removedOrigin = bi.OriginCell;
-        removedSize = bi.SizeXYZ;
+        removedSize = bi.SizeXYZ;     // 回転後サイズを保存
         removedRot = bi.Rotation;
-
 
         rules.RemoveObjectCells(removedOrigin, removedSize);
         Object.Destroy(bi.gameObject);
@@ -53,15 +54,23 @@ public class RemoveCommand : IBuildCommand
 
     public void Undo()
     {
+        if (grid == null || spawner == null || rules == null || database == null)
+            return;
+
         if (!database.TryGetByID(removedID, out var data) || data == null || data.Prefab == null)
             return;
 
+        // 保存していた実サイズでチェック
         if (!rules.CanPlace(removedOrigin, removedSize, out _))
             return;
 
         var obj = spawner.Spawn(grid, removedOrigin, data, removedRot);
+        if (obj == null) return;
+
         var bi = obj.GetComponent<BlockInstance>();
         if (bi == null) return;
-        rules.RegisterObjectCells(removedOrigin, removedSize, bi);
+
+        // Spawn後の実サイズで登録する方が安全
+        rules.RegisterObjectCells(bi.OriginCell, bi.SizeXYZ, bi);
     }
 }
