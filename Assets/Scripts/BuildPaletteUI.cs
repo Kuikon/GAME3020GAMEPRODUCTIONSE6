@@ -57,7 +57,7 @@ public class BuildPaletteUI : MonoBehaviour
         RebuildItemGrid();
 
         if (currentCategoryText != null)
-            currentCategoryText.text = $"Category: {CurrentCategory}";
+            currentCategoryText.text = $" {CurrentCategory}";
     }
 
     public void SelectItem(int objectID)
@@ -155,7 +155,7 @@ public class BuildPaletteUI : MonoBehaviour
         if (selectedItemText == null) return;
 
         if (database != null && database.TryGetByID(SelectedObjectID, out var data) && data != null)
-            selectedItemText.text = $"Selected: {data.Name} (ID:{data.ID})";
+            selectedItemText.text = $" {data.Name}";
         else
             selectedItemText.text = "Selected: None";
     }
