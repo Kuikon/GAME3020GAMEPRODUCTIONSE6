@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 2053020658582835445}
   - component: {fileID: 6023280604381997641}
   - component: {fileID: 8387056508983111924}
+  - component: {fileID: 3194393824444116592}
   m_Layer: 8
   m_Name: Visual
   m_TagString: Untagged
@@ -89,6 +90,28 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 275250299067901465}
   m_Mesh: {fileID: 2696811676918220183, guid: a5d4c91c560cb404c95944cff00b245d, type: 3}
+--- !u!64 &3194393824444116592
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 275250299067901465}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 2696811676918220183, guid: a5d4c91c560cb404c95944cff00b245d, type: 3}
 --- !u!1 &2666165580292365926
 GameObject:
   m_ObjectHideFlags: 0
@@ -99,7 +122,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2924803930964306484}
   - component: {fileID: 7716099144622302304}
-  - component: {fileID: 5263723374785431834}
   m_Layer: 8
   m_Name: 'Colliders '
   m_TagString: Untagged
@@ -143,28 +165,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 6, y: 5, z: 6}
   m_Center: {x: 0, y: 0.5, z: -0.00000011920929}
---- !u!64 &5263723374785431834
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2666165580292365926}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 1
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 2696811676918220183, guid: a5d4c91c560cb404c95944cff00b245d, type: 3}
 --- !u!1 &4434953299177490781
 GameObject:
   m_ObjectHideFlags: 0

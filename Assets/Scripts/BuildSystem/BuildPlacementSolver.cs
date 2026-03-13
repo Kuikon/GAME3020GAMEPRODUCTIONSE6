@@ -155,4 +155,24 @@ public class BuildPlacementSolver
 
         return new Vector3Int(ox, oy, oz);
     }
+    public Vector3Int GetRotatedSize(Vector3Int originalSize, Quaternion rot)
+    {
+        float y = Mathf.Round(rot.eulerAngles.y) % 360f;
+
+        if (Mathf.Approximately(y, 90f) || Mathf.Approximately(y, 270f))
+            return new Vector3Int(originalSize.z, originalSize.y, originalSize.x);
+
+        return originalSize;
+    }
+    public bool TryGetHoverCell(BuildRaycaster raycaster, Vector3Int placeSize, out Vector3Int hoverCell, out RaycastHit hit)
+    {
+        hoverCell = default;
+        hit = default;
+
+        if (raycaster == null) return false;
+        if (!raycaster.RaycastForBlock(out hit)) return false;
+        if (!TrySolveOriginCell(hit, placeSize, out hoverCell)) return false;
+
+        return true;
+    }
 }

@@ -21,7 +21,7 @@ public class BuildRaycaster
         return cam.ScreenPointToRay(Mouse.current.position.ReadValue());
     }
 
-    public bool RaycastForPlace(out RaycastHit hit)
+    public bool RaycastForBlock(out RaycastHit hit)
     {
         hit = default;
         if (cam == null || Mouse.current == null) return false;
@@ -31,13 +31,14 @@ public class BuildRaycaster
         return Physics.Raycast(ray, out hit, rayDistance, placeMask, QueryTriggerInteraction.Ignore);
     }
 
-    public bool RaycastForRemove(out RaycastHit hit)
+    public bool TryGetRemoveTarget(out BlockInstance block)
     {
-        hit = default;
-        if (cam == null || Mouse.current == null) return false;
+        block = null;
 
-        Ray ray = MakeMouseRay();
-        Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.blue, 0.05f);
-        return Physics.Raycast(ray, out hit, rayDistance, blockOnlyMask, QueryTriggerInteraction.Ignore);
+        if (!RaycastForBlock(out var hit))
+            return false;
+
+        block = hit.collider.GetComponentInParent<BlockInstance>();
+        return block != null;
     }
 }
