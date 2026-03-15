@@ -67,7 +67,6 @@ public class RobotControllerCommander : MonoBehaviour
 
         if (ctx.JumpAction != null)
         {
-            Debug.Log($"JumpAction null? {ctx.JumpAction == null}");
             ctx.JumpAction.performed += jumpPerformedHandler;
             ctx.JumpAction.canceled += jumpCanceledHandler;
         }
@@ -99,14 +98,12 @@ public class RobotControllerCommander : MonoBehaviour
         ctx.Dt = Time.fixedDeltaTime;
 
         judge.Tick(ctx);
-        Debug.Log($"Grounded={ctx.IsGrounded}");
         state.Tick(ctx);
         xform.Tick(ctx);
         output.Tick(ctx);
     }
     private void OnJumpPerformed(InputAction.CallbackContext _)
     {
-        Debug.Log("Jump performed event fired");
         ctx.JumpPressed = true;
         ctx.JumpHeld = true;
     }

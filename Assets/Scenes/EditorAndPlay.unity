@@ -1890,6 +1890,7 @@ MonoBehaviour:
   toggleActionName: ToggleGameMode
   robot: {fileID: 8674306283314966613}
   cameraOrbit: {fileID: 705997768}
+  runtimeCoordinator: {fileID: 1568488080}
   buildController: {fileID: 1636068509}
   mainCamera: {fileID: 330585545}
   editCamera: {fileID: 1520430209}
@@ -16821,6 +16822,7 @@ MonoBehaviour:
   grid: {fileID: 1639166971}
   database: {fileID: 11400000, guid: 0a5a7522b67f46249a2af2a6ec41ce8c, type: 2}
   placedRoot: {fileID: 1993440064}
+  runtimeCoordinator: {fileID: 1568488080}
   thumbnailCamera: {fileID: 1380993267}
   thumbnailWidth: 256
   thumbnailHeight: 144
@@ -42127,6 +42129,55 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 5e8fc474c33dc9a408e80fcfb5c6af9b, type: 3}
   m_PrefabInstance: {fileID: 1565967470}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1568488079
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1568488081}
+  - component: {fileID: 1568488080}
+  m_Layer: 0
+  m_Name: 'LevelRuntimeCoordinator '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1568488080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1568488079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dcce5e0bc3906814ea6b3037a1980909, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LevelRuntimeCoordinator
+  database: {fileID: 11400000, guid: 0a5a7522b67f46249a2af2a6ec41ce8c, type: 2}
+  modeManager: {fileID: 51499448}
+  playerTransform: {fileID: 4408175770231039627}
+  spawnPadding: 0.05
+  debugLogs: 1
+--- !u!4 &1568488081
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1568488079}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4.06576, y: 1, z: -5.56322}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1568934219
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -59856,9 +59907,10 @@ SceneRoots:
   - {fileID: 1099293774}
   - {fileID: 460363238}
   - {fileID: 1993440064}
-  - {fileID: 605204538}
   - {fileID: 1090581756}
   - {fileID: 1380993268}
   - {fileID: 2016931655}
   - {fileID: 1638150743}
   - {fileID: 189041801}
+  - {fileID: 605204538}
+  - {fileID: 1568488081}

@@ -5,6 +5,7 @@ public class PlaceCommand : IBuildCommand
     private readonly GridManager grid;
     private readonly BuildSpawner spawner;
     private readonly BuildPlacementRules rules;
+    private readonly ObjectsDatabaseSO database;
 
     private readonly Vector3Int originCell;
     private readonly ObjectData data;
@@ -21,7 +22,8 @@ public class PlaceCommand : IBuildCommand
         BuildPlacementRules rules,
         Vector3Int originCell,
         ObjectData data,
-        Quaternion rotation)
+        Quaternion rotation,
+        ObjectsDatabaseSO database)
     {
         this.grid = grid;
         this.spawner = spawner;
@@ -30,6 +32,7 @@ public class PlaceCommand : IBuildCommand
         this.data = data;
         this.rotation = rotation;
         this.rotatedSize = GetRotatedSize(data != null ? data.SizeXYZ : Vector3Int.one, rotation);
+        this.database = database;
     }
 
     public bool Execute()
@@ -37,9 +40,12 @@ public class PlaceCommand : IBuildCommand
         if (grid == null || spawner == null || rules == null || data == null || data.Prefab == null)
             return false;
 
-        // ‰ñ“]ŒãƒTƒCƒY‚Å”»’è
-        if (!rules.CanPlace(originCell, rotatedSize, out _))
+        if (!rules.CanPlaceObject(data, database, originCell, rotatedSize, out var reason))
+        {
+            Debug.Log($"[PlaceCommand] Execute denied: {reason}");
             return false;
+        }
+
 
         spawned = spawner.Spawn(grid, originCell, data, rotation);
         if (spawned == null) return false;

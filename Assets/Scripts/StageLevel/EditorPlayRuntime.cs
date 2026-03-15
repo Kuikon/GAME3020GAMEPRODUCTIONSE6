@@ -8,6 +8,7 @@ public class EditorPlayRuntime : MonoBehaviour
     [SerializeField] private GridManager grid;
     [SerializeField] private ObjectsDatabaseSO database;
     [SerializeField] private Transform placedRoot;
+    [SerializeField] private LevelRuntimeCoordinator runtimeCoordinator;
 
     [Header("Thumbnail Camera")]
     [SerializeField] private Camera thumbnailCamera;
@@ -33,6 +34,9 @@ public class EditorPlayRuntime : MonoBehaviour
 
         if (buildController == null)
             buildController = FindFirstObjectByType<BuildController>();
+
+        if (runtimeCoordinator == null)
+            runtimeCoordinator = FindFirstObjectByType<LevelRuntimeCoordinator>();
     }
 
     private void Start()
@@ -49,10 +53,28 @@ public class EditorPlayRuntime : MonoBehaviour
 
         LoadCurrentLevel();
 
+        Debug.Log($"[EditorPlayRuntime] StartMode = {GameManager.I.StartMode}");
+
         if (GameManager.I.StartMode == StartMode.Play)
-            modeManager?.ForceModePlay();
+        {
+            bool ok = runtimeCoordinator != null && runtimeCoordinator.TryEnterPlay();
+
+            if (!ok)
+            {
+                Debug.LogWarning("[EditorPlayRuntime] Start/Goal が足りないため Edit モードで開始します。");
+                if (runtimeCoordinator != null)
+                    runtimeCoordinator.ReturnToEditFromPlay();
+                else
+                    modeManager?.ForceModeEdit();
+            }
+        }
         else
-            modeManager?.ForceModeEdit();
+        {
+            if (runtimeCoordinator != null)
+                runtimeCoordinator.ReturnToEditFromPlay();
+            else
+                modeManager?.ForceModeEdit();
+        }
     }
 
     private void EnsureGameManager()
@@ -80,11 +102,16 @@ public class EditorPlayRuntime : MonoBehaviour
     {
         LoadCurrentLevel();
 
+        if (runtimeCoordinator != null)
+            runtimeCoordinator.ReturnToEditFromPlay();
+        else
+            modeManager?.ForceModeEdit();
+
         if (debugLogs)
             Debug.Log($"[EditorPlayRuntime] Loaded Level: {GameManager.I.CurrentLevelId}");
     }
 
-    private void LoadCurrentLevel()
+    public void LoadCurrentLevel()
     {
         string levelId = GameManager.I.CurrentLevelId;
         var data = db.LoadLevel(levelId);
@@ -97,6 +124,9 @@ public class EditorPlayRuntime : MonoBehaviour
             buildController != null ? buildController.Spawner : null,
             buildController != null ? buildController.Rules : null
         );
+
+        if (debugLogs)
+            Debug.Log($"[EditorPlayRuntime] Applied Level: {levelId}");
     }
 
     private void SaveThumbnail(string levelId)
@@ -117,7 +147,6 @@ public class EditorPlayRuntime : MonoBehaviour
         RenderTexture prevCameraTarget = thumbnailCamera.targetTexture;
         bool prevCameraEnabled = thumbnailCamera.enabled;
 
-        // 画面に出さず、RenderTextureにだけ描画する
         thumbnailCamera.enabled = false;
         thumbnailCamera.targetTexture = rt;
         RenderTexture.active = rt;
@@ -127,7 +156,6 @@ public class EditorPlayRuntime : MonoBehaviour
         tex.ReadPixels(new Rect(0, 0, thumbnailWidth, thumbnailHeight), 0, 0);
         tex.Apply();
 
-        // 元に戻す
         thumbnailCamera.targetTexture = prevCameraTarget;
         thumbnailCamera.enabled = prevCameraEnabled;
         RenderTexture.active = prevActive;

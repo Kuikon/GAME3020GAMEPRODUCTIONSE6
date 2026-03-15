@@ -70,7 +70,7 @@ public class BuildController : MonoBehaviour
         spawner = new BuildSpawner(placedRoot);
         history = new CommandHistory();
         preview = new BuildPreview(grid, previewMaterial);
-        placementService = new BuildPlacementService(grid, raycaster, solver, spawner, rules, history);
+        placementService = new BuildPlacementService(grid, raycaster, solver, spawner, rules, database, history);
         moveService = new BuildMoveService(grid, raycaster, solver, spawner, rules, history);
         removeService = new BuildRemoveService(grid, spawner, rules, database, history);
         previewService = new BuildPreviewService(raycaster, solver, rules, preview);

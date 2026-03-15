@@ -36,31 +36,31 @@ MonoBehaviour:
     <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 2}
     <Prefab>k__BackingField: {fileID: 5325131912288433340, guid: 3a19fae0c7a536844a5ed518807c392f, type: 3}
     <IsBoxShape>k__BackingField: 1
-    Category: 1
+    Category: 3
   - <Name>k__BackingField: Sope_4x2x2_blue
     <ID>k__BackingField: 4
     <SizeXYZ>k__BackingField: {x: 4, y: 2, z: 2}
     <Prefab>k__BackingField: {fileID: 5264273733790164958, guid: c91bf965e86511643bbaf62d62cbcef8, type: 3}
     <IsBoxShape>k__BackingField: 0
-    Category: 2
+    Category: 1
   - <Name>k__BackingField: Hammer
     <ID>k__BackingField: 5
     <SizeXYZ>k__BackingField: {x: 4, y: 14, z: 4}
     <Prefab>k__BackingField: {fileID: 4137553097501895094, guid: d59affa55e0c6e54bb5bbdb301e9e008, type: 3}
     <IsBoxShape>k__BackingField: 0
-    Category: 5
+    Category: 6
   - <Name>k__BackingField: Start
     <ID>k__BackingField: 6
     <SizeXYZ>k__BackingField: {x: 6, y: 5, z: 6}
     <Prefab>k__BackingField: {fileID: 8986416493928728895, guid: b8cb46852cf00f64cb1e160e179c4b4b, type: 3}
     <IsBoxShape>k__BackingField: 0
-    Category: 1
+    Category: 4
   - <Name>k__BackingField: Goal
     <ID>k__BackingField: 7
     <SizeXYZ>k__BackingField: {x: 6, y: 7, z: 6}
     <Prefab>k__BackingField: {fileID: 90094258057818800, guid: 107908fd45877174c9d9870fb78dbb17, type: 3}
     <IsBoxShape>k__BackingField: 0
-    Category: 4
+    Category: 5
   - <Name>k__BackingField: Pillar
     <ID>k__BackingField: 8
     <SizeXYZ>k__BackingField: {x: 2, y: 4, z: 2}
@@ -90,25 +90,25 @@ MonoBehaviour:
     <SizeXYZ>k__BackingField: {x: 4, y: 2, z: 1}
     <Prefab>k__BackingField: {fileID: 3122377314453293854, guid: 9c5d83c9d10043d45af997df56cd016a, type: 3}
     <IsBoxShape>k__BackingField: 1
-    Category: 3
+    Category: 2
   - <Name>k__BackingField: Fence
     <ID>k__BackingField: 13
     <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 1}
     <Prefab>k__BackingField: {fileID: 6469705881968463013, guid: 9fcb43c4f43bb6c48b6eb3f421d9f349, type: 3}
     <IsBoxShape>k__BackingField: 1
-    Category: 2
+    Category: 3
   - <Name>k__BackingField: Floornet
     <ID>k__BackingField: 14
     <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 2}
     <Prefab>k__BackingField: {fileID: 7816289046575704201, guid: 9f278a1603145bf43bdb879644bc9deb, type: 3}
     <IsBoxShape>k__BackingField: 1
-    Category: 3
+    Category: 1
   - <Name>k__BackingField: Floornet
     <ID>k__BackingField: 15
     <SizeXYZ>k__BackingField: {x: 4, y: 1, z: 4}
     <Prefab>k__BackingField: {fileID: 4039680925214042719, guid: f9c1ba0ce194e2f49bf638585020bb8e, type: 3}
     <IsBoxShape>k__BackingField: 1
-    Category: 3
+    Category: 1
   - <Name>k__BackingField: Slope
     <ID>k__BackingField: 16
     <SizeXYZ>k__BackingField: {x: 2, y: 2, z: 2}
@@ -144,13 +144,13 @@ MonoBehaviour:
     <SizeXYZ>k__BackingField: {x: 5, y: 4, z: 4}
     <Prefab>k__BackingField: {fileID: 2583852430892452330, guid: c96fe263ad9217d45b4c625264eaddae, type: 3}
     <IsBoxShape>k__BackingField: 1
-    Category: 5
+    Category: 6
   - <Name>k__BackingField: Swiper
     <ID>k__BackingField: 22
     <SizeXYZ>k__BackingField: {x: 6, y: 1, z: 6}
     <Prefab>k__BackingField: {fileID: 1878487870393176879, guid: 42592f6c7505ae54fb0203d94f41f679, type: 3}
     <IsBoxShape>k__BackingField: 0
-    Category: 5
+    Category: 6
   - <Name>k__BackingField: Wood
     <ID>k__BackingField: 23
     <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 2}

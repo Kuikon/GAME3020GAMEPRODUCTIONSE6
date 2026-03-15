@@ -15,12 +15,13 @@ public class GameModeManager : MonoBehaviour
     [Header("Refs")]
     [SerializeField] private RobotControllerCommander robot;
     [SerializeField] private OrbitCamera cameraOrbit;
+    [SerializeField] private LevelRuntimeCoordinator runtimeCoordinator;
 
     [Header("Build Scripts (enable in Edit)")]
     [SerializeField] private MonoBehaviour buildController;
 
     [Header("Play Camera")]
-    [SerializeField] private Camera mainCamera; // Main Camera
+    [SerializeField] private Camera mainCamera;
 
     [Header("Edit Camera")]
     [SerializeField] private Camera editCamera;
@@ -52,13 +53,15 @@ public class GameModeManager : MonoBehaviour
         if (inputActions != null)
         {
             buildMap = inputActions.FindActionMap(buildMapName, true);
-
             gameModeMap = inputActions.FindActionMap(gameModeName, true);
             toggleAction = gameModeMap.FindAction(toggleActionName, true);
         }
 
         if (mainCamera == null)
             mainCamera = Camera.main;
+
+        if (runtimeCoordinator == null)
+            runtimeCoordinator = FindFirstObjectByType<LevelRuntimeCoordinator>();
     }
 
     private void OnEnable()
@@ -79,11 +82,6 @@ public class GameModeManager : MonoBehaviour
             buildMap.Disable();
     }
 
-    private void Start()
-    {
-        SetMode(startMode);
-    }
-
     public void ForceModeEdit()
     {
         SetMode(Mode.Edit);
@@ -96,7 +94,17 @@ public class GameModeManager : MonoBehaviour
 
     private void OnToggle(InputAction.CallbackContext ctx)
     {
-        SetMode(mode == Mode.Play ? Mode.Edit : Mode.Play);
+        if (runtimeCoordinator == null)
+        {
+            Debug.LogWarning("[GameModeManager] runtimeCoordinator is null. Fallback toggle.");
+            SetMode(mode == Mode.Play ? Mode.Edit : Mode.Play);
+            return;
+        }
+
+        if (mode == Mode.Play)
+            runtimeCoordinator.ReturnToEditFromPlay();
+        else
+            runtimeCoordinator.TryEnterPlay();
     }
 
     private void SetMode(Mode newMode)
@@ -104,9 +112,6 @@ public class GameModeManager : MonoBehaviour
         mode = newMode;
         bool isPlay = (mode == Mode.Play);
 
-        // =========================
-        // Player control
-        // =========================
         if (robot != null)
         {
             robot.SetInputEnabled(isPlay);
@@ -115,14 +120,8 @@ public class GameModeManager : MonoBehaviour
                 robot.StopImmediately();
         }
 
-        // =========================
-        // Collider mode
-        // =========================
         ApplyPlacedColliderMode(isPlay);
 
-        // =========================
-        // Orbit / look input
-        // =========================
         if (cameraOrbit != null)
         {
             if (disableCameraLookInEdit)
@@ -131,31 +130,18 @@ public class GameModeManager : MonoBehaviour
                 cameraOrbit.SetInputEnabled(true);
         }
 
-        // =========================
-        // Build scripts
-        // =========================
         if (buildController != null)
             buildController.enabled = !isPlay;
 
-
-        // =========================
-        // Real camera switching
-        // =========================
         if (mainCamera != null)
             mainCamera.gameObject.SetActive(isPlay);
 
         if (editCamera != null)
             editCamera.gameObject.SetActive(!isPlay);
 
-        // =========================
-        // Edit free fly input
-        // =========================
         if (editFly != null)
             editFly.SetInputEnabled(!isPlay);
 
-        // =========================
-        // Cursor
-        // =========================
         Cursor.visible = !isPlay;
         Cursor.lockState = isPlay ? CursorLockMode.Locked : CursorLockMode.None;
 
@@ -174,15 +160,12 @@ public class GameModeManager : MonoBehaviour
 
         var blocks = placedRoot.GetComponentsInChildren<BlockInstance>(true);
 
-        if (debugLogs)
-            Debug.Log($"[ColliderSwitch] Found blocks: {blocks.Length}");
-
         foreach (var bi in blocks)
         {
             if (bi == null) continue;
 
             if (debugLogs)
-                Debug.Log($"[ColliderSwitch] Applying to {bi.name}");
+                Debug.Log($"[GameModeManager] ApplyColliderMode: {bi.name}, isPlay={isPlay}");
 
             bi.ApplyColliderMode(isPlay, database);
         }

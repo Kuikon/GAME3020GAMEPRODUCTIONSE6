@@ -4,6 +4,7 @@ public enum ObjectCategory
     Ground = 1,
     Wall = 2,
     Decoration = 3,
-    Goal = 4,
-    Trap = 5
+    Start = 4,
+    Goal = 5,
+    Trap = 6
 }
