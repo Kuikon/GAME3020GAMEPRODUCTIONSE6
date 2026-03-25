@@ -51,6 +51,9 @@ public class BuildMoveService
 
         state.BeginMove(target);
 
+        // 元のブロック本体を非表示にする
+        SetBlockVisible(target, false);
+
         if (debugLogs)
             Debug.Log($"Move target selected: {target.name} origin={target.OriginCell}");
 
@@ -78,16 +81,48 @@ public class BuildMoveService
         var cmd = new MoveCommand(grid, spawner, rules, targetBI, toCell, "Move Block");
         bool ok = history.Do(cmd, debugLogs);
 
-        if (!ok && debugLogs)
+        if (ok)
+        {
+            // 移動成功したので本体を再表示
+            SetBlockVisible(targetBI, true);
+            state.CancelMove();
+
+            if (debugLogs)
+                Debug.Log($"Move success: {targetBI.name} -> {toCell}");
+
+            return true;
+        }
+
+        if (debugLogs)
             Debug.Log("Move failed.");
 
-        state.CancelMove();
-        return ok;
+        // 失敗時はまだ移動中にしておく
+        // 非表示のまま Preview で持たせる
+        return false;
     }
 
     public void CancelMove(BuildState state)
     {
-        if (state == null) return;
+        if (state == null)
+            return;
+
+        if (state.MoveTarget != null)
+            SetBlockVisible(state.MoveTarget, true);
+
         state.CancelMove();
+    }
+
+    private void SetBlockVisible(BlockInstance block, bool visible)
+    {
+        if (block == null)
+            return;
+
+        var renderers = block.GetComponentsInChildren<Renderer>(true);
+        foreach (var r in renderers)
+            r.enabled = visible;
+
+        var colliders = block.GetComponentsInChildren<Collider>(true);
+        foreach (var c in colliders)
+            c.enabled = visible;
     }
 }

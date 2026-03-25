@@ -7,6 +7,7 @@ public class BuildPreview
     private readonly Material previewMaterial;
 
     private GameObject singlePreview;
+    private GameObject movePreview;
     private readonly List<GameObject> linePreviews = new List<GameObject>();
 
     private ObjectData currentSelectedData;
@@ -35,6 +36,9 @@ public class BuildPreview
 
         if (singlePreview == null) return;
 
+        if (movePreview != null)
+            movePreview.SetActive(false);
+
         singlePreview.transform.position = grid.BoxToWorldCenter(cell, size);
         singlePreview.transform.rotation = rot;
         singlePreview.SetActive(true);
@@ -55,7 +59,8 @@ public class BuildPreview
 
         if (singlePreview != null)
             singlePreview.SetActive(false);
-
+        if (movePreview != null)
+            movePreview.SetActive(false);
         for (int i = 0; i < linePreviews.Count; i++)
         {
             if (linePreviews[i] == null) continue;
@@ -76,6 +81,7 @@ public class BuildPreview
         lastValid = valid;
 
         ApplyColor(singlePreview, valid);
+        ApplyColor(movePreview, valid);
 
         for (int i = 0; i < linePreviews.Count; i++)
             ApplyColor(linePreviews[i], valid);
@@ -85,6 +91,9 @@ public class BuildPreview
     {
         if (singlePreview != null)
             singlePreview.SetActive(false);
+
+        if (movePreview != null)
+            movePreview.SetActive(false);
 
         for (int i = 0; i < linePreviews.Count; i++)
         {
@@ -208,7 +217,35 @@ public class BuildPreview
             }
         }
     }
+    public void ShowMovePreview(GameObject targetObject, Vector3 worldPosition)
+    {
+        if (targetObject == null)
+            return;
 
+        if (movePreview == null)
+        {
+            movePreview = Object.Instantiate(targetObject);
+            movePreview.name = targetObject.name + "_MovePreview";
+
+            StripComponentsForPreview(movePreview);
+            ApplyPreviewMaterial(movePreview);
+            ApplyColor(movePreview, lastValid);
+        }
+
+        if (singlePreview != null)
+            singlePreview.SetActive(false);
+
+        for (int i = 0; i < linePreviews.Count; i++)
+        {
+            if (linePreviews[i] != null)
+                linePreviews[i].SetActive(false);
+        }
+
+        movePreview.transform.position = worldPosition;
+        movePreview.transform.rotation = targetObject.transform.rotation;
+        movePreview.transform.localScale = targetObject.transform.localScale;
+        movePreview.SetActive(true);
+    }
     private void DestroyGO(GameObject go)
     {
         if (go == null) return;
