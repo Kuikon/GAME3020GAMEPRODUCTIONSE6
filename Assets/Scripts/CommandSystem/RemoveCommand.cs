@@ -1,125 +1,92 @@
 using UnityEngine;
 
-public class RemoveCommand : IBuildCommand
+public sealed class RemoveCommand : IBuildCommand
 {
-    private readonly GridManager grid;
-    private readonly BuildSpawner spawner;
-    private readonly BuildPlacementRules rules;
-    private readonly ObjectsDatabaseSO database;
+    private readonly BuildContext context;
     private readonly Vector3Int anyCell;
-    private readonly DroneCompanionController drone;
 
-    private int removedID;
-    private Vector3Int removedOrigin;
+    private Vector3Int removedOriginCell;
     private Vector3Int removedSize;
-    private Quaternion removedRot;
+    private Quaternion removedRotation;
+    private ObjectData removedData;
 
-    private GameObject removingObject;
-    private bool hasSnapshot;
+    private BlockInstance removedBlock;
+    private GameObject removedObject;
 
     public string Name => $"Remove @ {anyCell}";
 
-    public RemoveCommand(
-        GridManager grid,
-        BuildSpawner spawner,
-        BuildPlacementRules rules,
-        ObjectsDatabaseSO database,
-        Vector3Int anyCell,
-        DroneCompanionController drone = null)
+    public RemoveCommand(BuildContext context, Vector3Int anyCell)
     {
-        this.grid = grid;
-        this.spawner = spawner;
-        this.rules = rules;
-        this.database = database;
+        this.context = context;
         this.anyCell = anyCell;
-        this.drone = drone;
     }
 
-    public bool Execute()
+    public bool Do(bool debugLogs = false)
     {
-        if (grid == null || spawner == null || rules == null || database == null)
+        if (context == null)
             return false;
 
-        if (!rules.TryGetObjectAtCell(anyCell, out var obj) || obj == null)
+        if (!context.Rules.TryGetObjectAtCell(anyCell, out removedBlock) || removedBlock == null)
+        {
+            if (debugLogs)
+                Debug.Log($"[RemoveCommand] No block found at {anyCell}");
             return false;
+        }
 
-        var bi = obj.GetComponent<BlockInstance>();
-        if (bi == null)
+        removedObject = removedBlock.gameObject;
+        removedOriginCell = removedBlock.OriginCell;
+        removedSize = removedBlock.SizeXYZ;
+        removedRotation = removedBlock.Rotation;
+
+        if (!context.Database.TryGetByID(removedBlock.ObjectID, out removedData))
+        {
+            if (debugLogs)
+                Debug.Log("[RemoveCommand] Failed to get ObjectData by ID.");
             return false;
+        }
 
-        removingObject = bi.gameObject;
+        context.Drone?.PlayRemove(removedObject.transform);
 
-        removedID = bi.ObjectID;
-        removedOrigin = bi.OriginCell;
-        removedSize = bi.SizeXYZ;
-        removedRot = bi.Rotation;
-        hasSnapshot = true;
+        context.Rules.RemoveObjectCells(removedOriginCell, removedSize);
 
-        rules.RemoveObjectCells(removedOrigin, removedSize);
+        GameObject target = removedObject;
 
-        DisableColliders(removingObject);
-
-        if (drone != null)
-            drone.PlayRemove(removingObject.transform);
-
-        GameObject target = removingObject;
         BuildEffectUtility.PlayDestroyEffect(target, () =>
         {
-            if (drone != null)
-                drone.SetIdle();
-
-            if (target != null)
-                Object.Destroy(target);
-
-            if (removingObject == target)
-                removingObject = null;
+            Object.Destroy(target);
         });
+
+        if (debugLogs)
+            Debug.Log($"[RemoveCommand] Removed {removedData.Name} @ {removedOriginCell}");
 
         return true;
     }
-
-    public void Undo()
+    public void Undo(bool debugLogs = false)
     {
-        if (grid == null || spawner == null || rules == null || database == null)
+        if (context == null || removedData == null)
             return;
 
-        if (!hasSnapshot)
-            return;
-
-        if (!database.TryGetByID(removedID, out var data) || data == null || data.Prefab == null)
-            return;
-
-        if (!rules.CanPlace(removedOrigin, removedSize, out _))
-            return;
-
-        var obj = spawner.Spawn(grid, removedOrigin, data, removedRot);
-        if (obj == null)
-            return;
-
-        var bi = obj.GetComponent<BlockInstance>();
-        if (bi == null)
+        GameObject respawned = context.Spawner.Spawn(context.Grid, removedOriginCell, removedData, removedRotation);
+        if (respawned == null)
         {
-            Object.Destroy(obj);
+            if (debugLogs)
+                Debug.Log("[RemoveCommand] Undo respawn failed.");
             return;
         }
 
-        rules.RegisterObjectCells(bi.OriginCell, bi.SizeXYZ, bi);
+        BlockInstance block = respawned.GetComponent<BlockInstance>();
+        if (block == null)
+            block = respawned.AddComponent<BlockInstance>();
 
-        if (drone != null)
-            drone.PlayBuild(obj);
+        block.Initialize(removedData.ID, removedOriginCell, removedSize, removedRotation);
+        context.Rules.RegisterObjectCells(removedOriginCell, removedSize, block);
 
-        BuildEffectUtility.PlayBuildEffect(obj);
+        removedObject = respawned;
+        removedBlock = block;
 
-        removingObject = null;
-    }
+        BuildEffectUtility.PlayBuildEffect(removedObject);
 
-    private void DisableColliders(GameObject obj)
-    {
-        if (obj == null)
-            return;
-
-        var colliders = obj.GetComponentsInChildren<Collider>();
-        for (int i = 0; i < colliders.Length; i++)
-            colliders[i].enabled = false;
+        if (debugLogs)
+            Debug.Log($"[RemoveCommand] Undo success @ {removedOriginCell}");
     }
 }

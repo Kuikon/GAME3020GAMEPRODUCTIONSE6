@@ -1,35 +1,41 @@
 using System.Collections.Generic;
 
-public class CompositeCommand : IBuildCommand
+public sealed class CompositeCommand : IBuildCommand
 {
-    private readonly List<IBuildCommand> children = new();
+    private readonly List<IBuildCommand> commands = new List<IBuildCommand>();
+
     public string Name { get; }
 
-    public CompositeCommand(string name) => Name = name;
-
-    public void Add(IBuildCommand cmd)
+    public CompositeCommand(string name)
     {
-        if (cmd != null) children.Add(cmd);
+        Name = name;
     }
 
-    public bool Execute()
+    public void Add(IBuildCommand command)
     {
-        // “r’†‚Å¸”s‚µ‚½‚çAÀsÏ‚İ‚ğŠª‚«–ß‚·
-        for (int i = 0; i < children.Count; i++)
+        if (command != null)
+            commands.Add(command);
+    }
+
+    public bool Do(bool debugLogs = false)
+    {
+        for (int i = 0; i < commands.Count; i++)
         {
-            if (!children[i].Execute())
-            {
-                for (int j = i - 1; j >= 0; j--)
-                    children[j].Undo();
-                return false;
-            }
+            if (commands[i].Do(debugLogs))
+                continue;
+
+            for (int j = i - 1; j >= 0; j--)
+                commands[j].Undo(debugLogs);
+
+            return false;
         }
-        return children.Count > 0;
+
+        return true;
     }
 
-    public void Undo()
+    public void Undo(bool debugLogs = false)
     {
-        for (int i = children.Count - 1; i >= 0; i--)
-            children[i].Undo();
+        for (int i = commands.Count - 1; i >= 0; i--)
+            commands[i].Undo(debugLogs);
     }
 }

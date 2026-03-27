@@ -1,13 +1,8 @@
 using UnityEngine;
 
-public class PlaceCommand : IBuildCommand
+public sealed class PlaceCommand : IBuildCommand
 {
-    private readonly GridManager grid;
-    private readonly BuildSpawner spawner;
-    private readonly BuildPlacementRules rules;
-    private readonly ObjectsDatabaseSO database;
-    private readonly DroneCompanionController drone;
-
+    private readonly BuildContext context;
     private readonly Vector3Int originCell;
     private readonly ObjectData data;
     private readonly Quaternion rotation;
@@ -16,111 +11,81 @@ public class PlaceCommand : IBuildCommand
     private GameObject spawned;
 
     public GameObject SpawnedObject => spawned;
-
-    public string Name => $"Place {data?.Name} (ID={data?.ID}) @ {originCell} rot={rotation.eulerAngles} size={rotatedSize}";
+    public string Name => $"Place {data?.Name} @ {originCell}";
 
     public PlaceCommand(
-        GridManager grid,
-        BuildSpawner spawner,
-        BuildPlacementRules rules,
+        BuildContext context,
         Vector3Int originCell,
         ObjectData data,
-        Quaternion rotation,
-        ObjectsDatabaseSO database,
-        DroneCompanionController drone = null)
+        Quaternion rotation)
     {
-        this.grid = grid;
-        this.spawner = spawner;
-        this.rules = rules;
+        this.context = context;
         this.originCell = originCell;
         this.data = data;
         this.rotation = rotation;
-        this.database = database;
-        this.drone = drone;
-
-        rotatedSize = GetRotatedSize(data != null ? data.SizeXYZ : Vector3Int.one, rotation);
+        this.rotatedSize = context != null && context.Solver != null
+            ? context.Solver.GetRotatedSize(data != null ? data.SizeXYZ : Vector3Int.one, rotation)
+            : (data != null ? data.SizeXYZ : Vector3Int.one);
     }
 
-    public bool Execute()
+    public bool Do(bool debugLogs = false)
     {
-        if (grid == null || spawner == null || rules == null || database == null || data == null || data.Prefab == null)
+        if (context == null || data == null || data.Prefab == null)
             return false;
 
-        if (!rules.CanPlaceObject(data, database, originCell, rotatedSize, out var reason))
+        if (!context.Rules.CanPlaceObject(data, context.Database, originCell, rotatedSize, out string reason))
         {
-            Debug.Log($"[PlaceCommand] Execute denied: {reason}");
+            if (debugLogs)
+                Debug.Log($"[PlaceCommand] CanPlaceObject failed @ {originCell} reason={reason}");
             return false;
         }
 
-        spawned = spawner.Spawn(grid, originCell, data, rotation);
+        spawned = context.Spawner.Spawn(context.Grid, originCell, data, rotation);
         if (spawned == null)
-            return false;
-
-        var bi = spawned.GetComponent<BlockInstance>();
-        if (bi == null)
         {
-            Object.Destroy(spawned);
-            spawned = null;
+            if (debugLogs)
+                Debug.Log("[PlaceCommand] Spawn failed.");
             return false;
         }
 
-        rules.RegisterObjectCells(bi.OriginCell, bi.SizeXYZ, bi);
-
-        if (drone != null)
-            drone.PlayBuild(spawned);
-
-        BuildEffectUtility.PlayBuildEffect(spawned);
-
+        RegisterSpawned(spawned);
+        context.Drone?.PlayBuild(spawned);
         return true;
     }
 
-    public void Undo()
+    public void Undo(bool debugLogs = false)
     {
         if (spawned == null)
             return;
 
-        GameObject target = spawned;
-        var bi = target.GetComponent<BlockInstance>();
+        UnregisterSpawned();
 
-        if (bi != null)
-            rules.RemoveObjectCells(bi.OriginCell, bi.SizeXYZ);
-        else
-            rules.RemoveObjectCells(originCell, rotatedSize);
-
-        DisableColliders(target);
-
-        if (drone != null)
-            drone.PlayRemove(target.transform);
-
-        BuildEffectUtility.PlayDestroyEffect(target, () =>
-        {
-            if (drone != null)
-                drone.SetIdle();
-
-            if (target != null)
-                Object.Destroy(target);
-        });
-
-        spawned = null;
+        if (debugLogs)
+            Debug.Log($"[PlaceCommand] Undo @ {originCell}");
     }
 
-    private void DisableColliders(GameObject obj)
+    private void RegisterSpawned(GameObject go)
     {
-        if (obj == null)
+        if (go == null)
             return;
 
-        var colliders = obj.GetComponentsInChildren<Collider>();
-        for (int i = 0; i < colliders.Length; i++)
-            colliders[i].enabled = false;
+        BlockInstance block = go.GetComponent<BlockInstance>();
+        if (block == null)
+            block = go.AddComponent<BlockInstance>();
+
+        block.Initialize(data.ID, originCell, rotatedSize, rotation);
+        context.Rules.RegisterObjectCells(originCell, rotatedSize, block);
     }
 
-    private Vector3Int GetRotatedSize(Vector3Int originalSize, Quaternion rot)
+    private void UnregisterSpawned()
     {
-        float y = Mathf.Round(rot.eulerAngles.y) % 360f;
+        if (spawned == null)
+            return;
 
-        if (Mathf.Approximately(y, 90f) || Mathf.Approximately(y, 270f))
-            return new Vector3Int(originalSize.z, originalSize.y, originalSize.x);
+        BlockInstance block = spawned.GetComponent<BlockInstance>();
+        if (block == null)
+            return;
 
-        return originalSize;
+        context.Rules.RemoveObjectCells(block.OriginCell, block.SizeXYZ);
     }
 }

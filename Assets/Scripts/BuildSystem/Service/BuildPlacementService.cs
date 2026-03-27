@@ -1,121 +1,214 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class BuildPlacementService
+public sealed class BuildPlacementService
 {
-    private readonly GridManager grid;
-    private readonly BuildRaycaster raycaster;
-    private readonly BuildPlacementSolver solver;
-    private readonly BuildSpawner spawner;
-    private readonly BuildPlacementRules rules;
-    private readonly ObjectsDatabaseSO database;
-    private readonly CommandHistory history;
-    private readonly DroneCompanionController drone;
-    public BuildPlacementService(
-        GridManager grid,
-        BuildRaycaster raycaster,
-        BuildPlacementSolver solver,
-        BuildSpawner spawner,
-        BuildPlacementRules rules,
-        ObjectsDatabaseSO database,
-        CommandHistory history,
-        DroneCompanionController drone = null)
+    private readonly BuildContext context;
+    private readonly BuildState state;
+    private readonly bool debugLogs;
+
+    public BuildPlacementService(BuildContext context, BuildState state, bool debugLogs = false)
     {
-        this.grid = grid;
-        this.raycaster = raycaster;
-        this.solver = solver;
-        this.spawner = spawner;
-        this.rules = rules;
-        this.database = database;
-        this.history = history;
-        this.drone = drone;
+        this.context = context;
+        this.state = state;
+        this.debugLogs = debugLogs;
     }
 
-    public bool HandlePlaceInput(
-        BuildState state,
-        ObjectData data,
-        bool debugLogs,
-        out GameObject spawnedObject)
+    public void UpdatePreview()
     {
-        spawnedObject = null;
+        if (state.PlaceTool == BuildTool.Move)
+        {
+            UpdateMovePreview();
+            return;
+        }
 
-        if (state == null || data == null || data.Prefab == null)
-            return false;
+        if (!TryGetSelectedData(out ObjectData data))
+        {
+            HidePreviewAndIdleDrone();
+            return;
+        }
+
+        context.Preview.SetSelected(data);
 
         Quaternion rotation = state.CurrentRotation;
-        Vector3Int rotatedSize = solver.GetRotatedSize(data.SizeXYZ, rotation);
+        Vector3Int rotatedSize = context.Solver.GetRotatedSize(data.SizeXYZ, rotation);
 
-        if (!solver.TryGetHoverCell(raycaster, rotatedSize, out Vector3Int hoverCell, out RaycastHit hit))
+        if (!context.Solver.TryGetHoverCell(
+                context.Raycaster,
+                rotatedSize,
+                out Vector3Int hoverCell,
+                out _))
         {
-            Log(debugLogs, "[BuildPlacementService] HandlePlaceInput: hover cell not found.");
+            HidePreviewAndIdleDrone();
+            return;
+        }
+
+        if (state.PlaceTool == BuildTool.Line && state.HasLineStart)
+        {
+            UpdateLinePreview(data, rotation, rotatedSize, hoverCell);
+            return;
+        }
+
+        bool canPlace = context.Rules.CanPlaceObject(
+            data,
+            context.Database,
+            hoverCell,
+            rotatedSize,
+            out _);
+
+        context.Preview.ShowSingle(hoverCell, rotatedSize, rotation);
+        context.Preview.SetValid(canPlace);
+    }
+
+   
+
+    // 予約段階
+    public bool TryCreatePlacementRequest(
+        out Vector3Int originCell,
+        out ObjectData data,
+        out Quaternion rotation,
+        bool debugLogsOverride = false)
+    {
+        originCell = default;
+        data = null;
+        rotation = Quaternion.identity;
+
+        if (state.PlaceTool == BuildTool.Move)
+        {
+            Log("[BuildPlacementService] TryCreatePlacementRequest: Move tool cannot create placement request.", debugLogsOverride);
             return false;
         }
 
-        if (state.PlaceTool == BuildController.PlaceToolMode.Single)
-            return TryPlaceSingle(state, data, hoverCell, rotation, debugLogs, out spawnedObject);
+        if (!TryGetSelectedData(out data))
+        {
+            Log("[BuildPlacementService] TryCreatePlacementRequest: selected data not found.", debugLogsOverride);
+            return false;
+        }
 
-        if (state.PlaceTool == BuildController.PlaceToolMode.Line)
-            return TryPlaceLine(state, data, hoverCell, rotation, rotatedSize, debugLogs, out spawnedObject);
+        rotation = state.CurrentRotation;
+        Vector3Int rotatedSize = context.Solver.GetRotatedSize(data.SizeXYZ, rotation);
 
+        if (!context.Solver.TryGetHoverCell(
+                context.Raycaster,
+                rotatedSize,
+                out Vector3Int hoverCell,
+                out _))
+        {
+            Log("[BuildPlacementService] TryCreatePlacementRequest: hover cell not found.", debugLogsOverride);
+            return false;
+        }
+
+        if (state.PlaceTool == BuildTool.Single)
+        {
+            if (!context.Rules.CanPlaceObject(
+                    data,
+                    context.Database,
+                    hoverCell,
+                    rotatedSize,
+                    out string reason))
+            {
+                Log($"[BuildPlacementService] TryCreatePlacementRequest denied: {reason}", debugLogsOverride);
+                return false;
+            }
+
+            originCell = hoverCell;
+            return true;
+        }
+
+        if (state.PlaceTool == BuildTool.Line)
+        {
+            if (!context.Rules.CanUseLineTool(data, out string reason))
+            {
+                Log($"[BuildPlacementService] TryCreatePlacementRequest line denied: {reason}", debugLogsOverride);
+                return false;
+            }
+
+            // 1回目クリック: ライン開始点だけ予約するのではなく、今まで通り開始だけして終了
+            if (!state.HasLineStart)
+            {
+                state.BeginLine(hoverCell);
+                Log("[BuildPlacementService] TryCreatePlacementRequest: line start selected.", debugLogsOverride);
+                return false;
+            }
+
+            if (!context.Solver.TryGetLineCellsOrthogonal(
+                    state.LineStartCell,
+                    hoverCell,
+                    rotatedSize,
+                    out List<Vector3Int> lineCells) ||
+                lineCells == null ||
+                lineCells.Count == 0)
+            {
+                Log("[BuildPlacementService] TryCreatePlacementRequest: line cells not found.", debugLogsOverride);
+                state.CancelLine();
+                return false;
+            }
+
+            // BuildApplicationService が単一セル前提なので、
+            // ここでは line の開始セルを返すだけにせず、
+            // line は TryPlaceReserved 側で再計算するため hoverCell を返しておく
+            originCell = hoverCell;
+            return true;
+        }
+
+        Log("[BuildPlacementService] TryCreatePlacementRequest: unsupported tool.", debugLogsOverride);
+        return false;
+    }
+
+    // 確定段階
+    public bool TryPlaceReserved(
+        Vector3Int originCell,
+        ObjectData data,
+        Quaternion rotation,
+        bool debugLogsOverride = false)
+    {
+        if (data == null)
+        {
+            Log("[BuildPlacementService] TryPlaceReserved: data is null.", debugLogsOverride);
+            return false;
+        }
+
+        if (state.PlaceTool == BuildTool.Single)
+            return TryPlaceSingle(data, originCell, rotation, debugLogsOverride);
+
+        if (state.PlaceTool == BuildTool.Line)
+            return TryPlaceLineReserved(data, originCell, rotation, debugLogsOverride);
+
+        Log("[BuildPlacementService] TryPlaceReserved: unsupported tool.", debugLogsOverride);
         return false;
     }
 
     private bool TryPlaceSingle(
-        BuildState state,
         ObjectData data,
         Vector3Int hoverCell,
         Quaternion rotation,
-        bool debugLogs,
-        out GameObject spawnedObject)
+        bool debugLogsOverride)
     {
-        spawnedObject = null;
-
-        var cmd = new PlaceCommand(
-            grid,
-            spawner,
-            rules,
-            hoverCell,
-            data,
-            rotation,
-            database,
-            drone);
-
-        bool ok = history.Do(cmd, debugLogs);
-        if (!ok)
-        {
-            Log(debugLogs, $"[BuildPlacementService] TryPlaceSingle failed at {hoverCell}");
-            return false;
-        }
-
-        spawnedObject = cmd.SpawnedObject;
-        return spawnedObject != null;
+        PlaceCommand cmd = new PlaceCommand(context, hoverCell, data, rotation);
+        return context.History.Do(cmd, debugLogsOverride);
     }
 
-    private bool TryPlaceLine(
-     BuildState state,
-     ObjectData data,
-     Vector3Int hoverCell,
-     Quaternion rotation,
-     Vector3Int rotatedSize,
-     bool debugLogs,
-     out GameObject spawnedObject)
+    private bool TryPlaceLineReserved(
+        ObjectData data,
+        Vector3Int hoverCell,
+        Quaternion rotation,
+        bool debugLogsOverride)
     {
-        spawnedObject = null;
+        Vector3Int rotatedSize = context.Solver.GetRotatedSize(data.SizeXYZ, rotation);
 
-        if (!rules.CanUseLineTool(data, out var reason))
+        if (!context.Rules.CanUseLineTool(data, out string reason))
         {
-            Log(debugLogs, $"[BuildPlacementService] TryPlaceLine denied: {reason}");
+            Log($"[BuildPlacementService] TryPlaceLineReserved denied: {reason}", debugLogsOverride);
             return false;
         }
 
         if (!state.HasLineStart)
         {
-            state.BeginLine(hoverCell);
-            Log(debugLogs, $"[BuildPlacementService] Line start set: {hoverCell}");
+            Log("[BuildPlacementService] TryPlaceLineReserved: line start missing.", debugLogsOverride);
             return false;
         }
 
-        if (!solver.TryGetLineCellsOrthogonal(
+        if (!context.Solver.TryGetLineCellsOrthogonal(
                 state.LineStartCell,
                 hoverCell,
                 rotatedSize,
@@ -123,68 +216,126 @@ public class BuildPlacementService
             lineCells == null ||
             lineCells.Count == 0)
         {
-            Log(debugLogs, "[BuildPlacementService] TryPlaceLine: line cells solve failed.");
             state.CancelLine();
+            Log("[BuildPlacementService] TryPlaceLineReserved: line cells invalid.", debugLogsOverride);
             return false;
         }
 
-        // ★ ここから変更
-        var composite = new CompositeCommand("Place Line");
+        CompositeCommand composite = new CompositeCommand("Place Line");
 
-        GameObject firstSpawned = null;
-        int placedCount = 0;
-
-        foreach (var cell in lineCells)
+        for (int i = 0; i < lineCells.Count; i++)
         {
-            var cmd = new PlaceCommand(
-                grid,
-                spawner,
-                rules,
-                cell,
-                data,
-                rotation,
-                database,
-                drone);
-
-            composite.Add(cmd);
-        }
-
-        bool ok = history.Do(composite, debugLogs);
-
-        if (!ok)
-        {
-            Log(debugLogs, "[BuildPlacementService] Line placement failed (composite).");
-            state.CancelLine();
-            return false;
-        }
-
-        // Execute後にSpawnedObjectを拾う
-        foreach (var cell in lineCells)
-        {
-            if (rules.TryGetObjectAtCell(cell, out var bi) && bi != null)
+            if (!context.Rules.CanPlaceObject(
+                    data,
+                    context.Database,
+                    lineCells[i],
+                    rotatedSize,
+                    out _))
             {
-                firstSpawned = bi.gameObject;
+                state.CancelLine();
+                Log($"[BuildPlacementService] TryPlaceLineReserved: cannot place at {lineCells[i]}.", debugLogsOverride);
+                return false;
+            }
+
+            composite.Add(new PlaceCommand(context, lineCells[i], data, rotation));
+        }
+
+        bool ok = context.History.Do(composite, debugLogsOverride);
+        state.CancelLine();
+        return ok;
+    }
+
+    private void UpdateLinePreview(ObjectData data, Quaternion rotation, Vector3Int rotatedSize, Vector3Int hoverCell)
+    {
+        if (!context.Solver.TryGetLineCellsOrthogonal(
+                state.LineStartCell,
+                hoverCell,
+                rotatedSize,
+                out List<Vector3Int> lineCells) ||
+            lineCells == null ||
+            lineCells.Count == 0)
+        {
+            context.Preview.Clear();
+            if (context.Drone != null)
+                context.Drone.SetIdle();
+            return;
+        }
+
+        context.Preview.ShowLine(lineCells, rotatedSize, rotation);
+
+        bool allValid = true;
+        for (int i = 0; i < lineCells.Count; i++)
+        {
+            if (!context.Rules.CanPlaceObject(data, context.Database, lineCells[i], rotatedSize, out _))
+            {
+                allValid = false;
                 break;
             }
         }
 
-        placedCount = lineCells.Count;
+        context.Preview.SetValid(allValid);
+    }
 
-        state.CancelLine();
-
-        if (placedCount <= 0)
+    private void UpdateMovePreview()
+    {
+        if (!state.HasMoveTarget || state.MoveTarget == null)
         {
-            Log(debugLogs, "[BuildPlacementService] TryPlaceLine: nothing placed.");
+            context.Preview.Clear();
+
+            if (context.Drone != null)
+                context.Drone.SetIdle();
+            return;
+        }
+
+        BlockInstance moveTarget = state.MoveTarget;
+
+        if (!context.Raycaster.RaycastForBlock(out RaycastHit hit))
+        {
+            context.Preview.Clear();
+            if (context.Drone != null)
+                context.Drone.SetIdle();
+            return;
+        }
+
+        if (!context.Solver.TrySolveOriginCell(hit, moveTarget.SizeXYZ, out Vector3Int toCell))
+        {
+            context.Preview.Clear();
+            if (context.Drone != null)
+                context.Drone.SetIdle();
+            return;
+        }
+
+        bool canPlace = context.Rules.CanPlaceIgnoring(moveTarget, toCell, moveTarget.SizeXYZ, out _);
+
+        Vector3 worldPos = context.Grid.BoxToWorldCenter(toCell, moveTarget.SizeXYZ);
+        context.Preview.ShowMovePreview(moveTarget.gameObject, worldPos);
+        context.Preview.SetValid(canPlace);
+    }
+
+    private bool TryGetSelectedData(out ObjectData data)
+    {
+        if (context.Database == null)
+        {
+            data = null;
             return false;
         }
 
-        spawnedObject = firstSpawned;
-        return spawnedObject != null;
+        return context.Database.TryGetByID(state.SelectedObjectID, out data)
+            && data != null
+            && data.Prefab != null;
     }
 
-    private void Log(bool debugLogs, string msg)
+    private void HidePreviewAndIdleDrone()
     {
-        if (debugLogs && !string.IsNullOrEmpty(msg))
+        context.Preview.Clear();
+
+        if (context.Drone != null)
+            context.Drone.SetIdle();
+    }
+
+    private void Log(string msg, bool enabled)
+    {
+        if (enabled && !string.IsNullOrEmpty(msg))
             Debug.Log(msg);
     }
 }

@@ -43,7 +43,7 @@ public class BuildPreviewService
 
         preview.SetSelected(data);
 
-        if (state.PlaceTool == BuildController.PlaceToolMode.Single)
+        if (state.PlaceTool == BuildTool.Single)
         {
             ShowSinglePreview(hoverCell, rotatedSize, rot);
             return;

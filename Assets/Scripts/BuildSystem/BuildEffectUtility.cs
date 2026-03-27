@@ -14,6 +14,7 @@ public static class BuildEffectUtility
 
         effect.PlayBuild();
     }
+
     public static void PlayDestroyEffect(GameObject targetObject, System.Action onComplete = null)
     {
         if (targetObject == null)
@@ -28,5 +29,31 @@ public static class BuildEffectUtility
             effect = targetObject.AddComponent<BlockBuildEffect>();
 
         effect.PlayDestroy(onComplete);
+    }
+
+    public static void PlayPickupEffect(GameObject targetObject)
+    {
+        if (targetObject == null)
+            return;
+
+        BlockBuildEffect effect = targetObject.GetComponent<BlockBuildEffect>();
+
+        if (effect == null)
+            effect = targetObject.AddComponent<BlockBuildEffect>();
+
+        effect.PlayPickup();
+    }
+
+    public static void PlayDropEffect(GameObject targetObject)
+    {
+        if (targetObject == null)
+            return;
+
+        BlockBuildEffect effect = targetObject.GetComponent<BlockBuildEffect>();
+
+        if (effect == null)
+            effect = targetObject.AddComponent<BlockBuildEffect>();
+
+        effect.PlayDrop();
     }
 }

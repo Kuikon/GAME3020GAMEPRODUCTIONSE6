@@ -1,76 +1,81 @@
 using UnityEngine;
 
-public class MoveCommand : IBuildCommand
+public sealed class MoveCommand : IBuildCommand
 {
-    public string Name { get; }
-    private readonly GridManager grid;
-    private readonly BuildSpawner spawner;    
-    private readonly BuildPlacementRules rules;
+    private readonly BuildContext context;
+    private readonly BlockInstance target;
+    private readonly Vector3Int toCell;
+    private readonly string commandName;
+
+    private Vector3Int fromCell;
+    private Quaternion rotation;
+    private Vector3Int size;
+
+    public string Name => commandName;
+
     public MoveCommand(
-       GridManager grid,
-       BuildSpawner spawner,
-       BuildPlacementRules rules,
-       BlockInstance target,
-       Vector3Int toCell,
-       string name = "Move")
+        BuildContext context,
+        BlockInstance target,
+        Vector3Int toCell,
+        string commandName = "Move Block")
     {
-        this.grid = grid;
-        this.spawner = spawner;
-        this.rules = rules;
-
+        this.context = context;
         this.target = target;
-        this.fromCell = target != null ? target.OriginCell : default;
         this.toCell = toCell;
-        this.size = target != null ? target.SizeXYZ : Vector3Int.one;
-        this.rot = target != null ? target.Rotation : Quaternion.identity;
+        this.commandName = commandName;
 
-        Name = name;
+        if (target != null)
+        {
+            fromCell = target.OriginCell;
+            rotation = target.Rotation;
+            size = target.SizeXYZ;
+        }
     }
 
-    private readonly BlockInstance target;
-    private readonly Vector3Int fromCell;
-    private readonly Vector3Int toCell;
-    private readonly Vector3Int size;
-    private readonly Quaternion rot;
-    public bool Execute()
+    public bool Do(bool debugLogs = false)
     {
-        if (grid == null || spawner == null || rules == null) return false;
-        if (target == null) return false;
-        if (fromCell == toCell) return false;
-
-        // Moveの判定は「自分自身を無視」してチェック
-        if (!rules.CanPlaceIgnoring(target, toCell, size, out _))
+        if (context == null || target == null)
             return false;
 
-        // ① 今いるセルの占有を消す
-        rules.RemoveObjectCells(fromCell, size);
+        if (!context.Rules.CanPlaceIgnoring(target, toCell, size, out string reason))
+        {
+            if (debugLogs)
+                Debug.Log($"[MoveCommand] CanPlaceIgnoring failed -> {toCell} reason={reason}");
+            return false;
+        }
 
-        // ② 見た目(Transform)を移動
-        spawner.MoveExisting(grid, target, toCell, size, rot);
+        ApplyMove(target, toCell);
 
-        // ③ BlockInstanceの情報を更新
-        target.Setup(target.ObjectID, toCell, size, rot);
-
-        // ④ 新しいセルを占有として登録
-        rules.RegisterObjectCells(toCell, size, target);
+        if (debugLogs)
+            Debug.Log($"[MoveCommand] Success: {fromCell} -> {toCell}");
 
         return true;
     }
-    public void Undo()
+
+    public void Undo(bool debugLogs = false)
     {
-        if (grid == null || spawner == null || rules == null) return;
-        if (target == null) return;
+        if (context == null || target == null)
+            return;
 
-        // ① 今いる（移動後）セルの占有を消す
-        rules.RemoveObjectCells(toCell, size);
+        ApplyMove(target, fromCell);
 
-        // ② 見た目を元に戻す
-        spawner.MoveExisting(grid, target, fromCell, size, rot);
+        if (debugLogs)
+            Debug.Log($"[MoveCommand] Undo: {toCell} -> {fromCell}");
+    }
 
-        // ③ BlockInstance情報を元に戻す
-        target.Setup(target.ObjectID, fromCell, size, rot);
+    private void ApplyMove(BlockInstance block, Vector3Int destination)
+    {
+        if (block == null)
+            return;
 
-        // ④ 元のセルを占有として登録し直す
-        rules.RegisterObjectCells(fromCell, size, target);
+        context.Rules.RemoveObjectCells(block.OriginCell, block.SizeXYZ);
+
+        Vector3 world = context.Grid.BoxToWorldCenter(destination, size);
+        block.transform.position = world;
+        block.transform.rotation = rotation;
+        block.SetOriginCell(destination);
+        block.SetRotation(rotation);
+
+        context.Rules.RegisterObjectCells(destination, size, block);
     }
 }

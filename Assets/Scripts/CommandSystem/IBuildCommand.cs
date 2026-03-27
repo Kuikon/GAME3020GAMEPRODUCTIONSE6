@@ -3,6 +3,6 @@ using UnityEngine;
 public interface IBuildCommand
 {
     string Name { get; }
-    bool Execute();   
-    void Undo();    
+    bool Do(bool debugLogs = false);
+    void Undo(bool debugLogs = false);
 }

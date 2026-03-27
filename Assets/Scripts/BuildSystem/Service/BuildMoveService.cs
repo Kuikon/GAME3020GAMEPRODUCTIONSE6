@@ -1,128 +1,164 @@
 using UnityEngine;
 
-public class BuildMoveService
+public sealed class BuildMoveService
 {
-    private readonly GridManager grid;
-    private readonly BuildRaycaster raycaster;
-    private readonly BuildPlacementSolver solver;
-    private readonly BuildSpawner spawner;
-    private readonly BuildPlacementRules rules;
-    private readonly CommandHistory history;
+    private readonly BuildContext context;
+    private readonly BuildState state;
+    private readonly bool debugLogs;
 
-    public BuildMoveService(
-        GridManager grid,
-        BuildRaycaster raycaster,
-        BuildPlacementSolver solver,
-        BuildSpawner spawner,
-        BuildPlacementRules rules,
-        CommandHistory history)
+    public BuildMoveService(BuildContext context, BuildState state, bool debugLogs = false)
     {
-        this.grid = grid;
-        this.raycaster = raycaster;
-        this.solver = solver;
-        this.spawner = spawner;
-        this.rules = rules;
-        this.history = history;
+        this.context = context;
+        this.state = state;
+        this.debugLogs = debugLogs;
     }
 
-    public bool HandleMoveInput(BuildState state, bool debugLogs = false)
+    public bool HandleMove()
     {
-        if (state == null)
+        if (!state.HasMoveTarget)
+            return TrySelectMoveTarget();
+
+        return TryCommitMove();
+    }
+
+    public bool TrySelectMoveTarget()
+    {
+        if (!CanStartMove())
             return false;
 
-        if (!state.HasMoveTarget)
+        if (!context.Raycaster.TryGetRemoveTarget(out BlockInstance target))
         {
-            return TrySelectMoveTarget(state, debugLogs);
+            Log("[BuildMoveService] TrySelectMoveTarget: remove target not found.");
+            return false;
         }
 
-        return TryCommitMove(state, debugLogs);
+        if (target == null)
+        {
+            Log("[BuildMoveService] TrySelectMoveTarget: target is null.");
+            return false;
+        }
+
+        state.BeginMove(target);
+        BuildEffectUtility.PlayPickupEffect(target.gameObject);
+        if (context.Drone != null)
+            context.Drone.BeginCarry(target.transform);
+
+        Log($"[BuildMoveService] Move target selected: {target.name} origin={target.OriginCell}");
+        return true;
     }
 
-    public bool TrySelectMoveTarget(BuildState state, bool debugLogs = false)
+    public bool TryCommitMove()
     {
+        if (!TryGetCurrentMoveTarget(out BlockInstance targetBlock))
+        {
+            Log("[BuildMoveService] TryCommitMove: move target missing.");
+            ResetMoveState(cancelCarry: true);
+            return false;
+        }
+
+        if (!TryGetMoveDestination(targetBlock, out Vector3Int toCell))
+        {
+            Log("[BuildMoveService] TryCommitMove: move destination invalid.");
+            return false;
+        }
+
+        if (!context.Rules.CanPlaceIgnoring(targetBlock, toCell, targetBlock.SizeXYZ, out string reason))
+        {
+            Log($"[BuildMoveService] TryCommitMove denied: {reason}");
+            return false;
+        }
+
+        MoveCommand cmd = new MoveCommand(
+            context,
+            targetBlock,
+            toCell,
+            "Move Block");
+
+        bool ok = context.History.Do(cmd, debugLogs);
+
+        if (!ok)
+        {
+            Log("[BuildMoveService] TryCommitMove: command failed.");
+            return false;
+        }
+
+        FinishMoveSuccess(targetBlock);
+
+        Log($"[BuildMoveService] Move success: {targetBlock.name} -> {toCell}");
+        return true;
+    }
+
+    public void CancelMove()
+    {
+        if (context.Drone != null)
+            context.Drone.CancelCarry();
+
+        ResetMoveState(cancelCarry: false);
+
+        Log("[BuildMoveService] Move cancelled.");
+    }
+
+    private bool CanStartMove()
+    {
+        if (context == null)
+            return false;
+
         if (state == null)
             return false;
 
-        if (!raycaster.TryGetRemoveTarget(out var target))
+        if (context.Raycaster == null)
             return false;
-
-        if (target == null)
-            return false;
-
-        state.BeginMove(target);
-
-        // 元のブロック本体を非表示にする
-        SetBlockVisible(target, false);
-
-        if (debugLogs)
-            Debug.Log($"Move target selected: {target.name} origin={target.OriginCell}");
 
         return true;
     }
 
-    public bool TryCommitMove(BuildState state, bool debugLogs = false)
+    private bool TryGetCurrentMoveTarget(out BlockInstance targetBlock)
     {
-        if (state == null || !state.HasMoveTarget)
+        targetBlock = state.MoveTarget;
+
+        if (!state.HasMoveTarget)
             return false;
 
-        var targetBI = state.MoveTarget;
-        if (targetBI == null)
-        {
-            state.CancelMove();
-            return false;
-        }
-
-        if (!raycaster.RaycastForBlock(out var hit))
-            return false;
-
-        if (!solver.TrySolveOriginCell(hit, targetBI.SizeXYZ, out var toCell))
-            return false;
-
-        var cmd = new MoveCommand(grid, spawner, rules, targetBI, toCell, "Move Block");
-        bool ok = history.Do(cmd, debugLogs);
-
-        if (ok)
-        {
-            // 移動成功したので本体を再表示
-            SetBlockVisible(targetBI, true);
-            state.CancelMove();
-
-            if (debugLogs)
-                Debug.Log($"Move success: {targetBI.name} -> {toCell}");
-
+        if (targetBlock != null)
             return true;
-        }
 
-        if (debugLogs)
-            Debug.Log("Move failed.");
-
-        // 失敗時はまだ移動中にしておく
-        // 非表示のまま Preview で持たせる
+        ResetMoveState(cancelCarry: true);
         return false;
     }
 
-    public void CancelMove(BuildState state)
+    private bool TryGetMoveDestination(BlockInstance targetBlock, out Vector3Int toCell)
     {
-        if (state == null)
-            return;
+        toCell = default;
 
-        if (state.MoveTarget != null)
-            SetBlockVisible(state.MoveTarget, true);
+        if (targetBlock == null)
+            return false;
 
-        state.CancelMove();
+        if (!context.Raycaster.RaycastForBlock(out RaycastHit hit))
+            return false;
+
+        return context.Solver.TrySolveOriginCell(hit, targetBlock.SizeXYZ, out toCell);
     }
 
-    private void SetBlockVisible(BlockInstance block, bool visible)
+    private void FinishMoveSuccess(BlockInstance targetBlock)
     {
-        if (block == null)
-            return;
+        if (context.Drone != null && targetBlock != null)
+            context.Drone.CommitCarry(targetBlock.transform);
+        BuildEffectUtility.PlayDropEffect(targetBlock.gameObject);
+        ResetMoveState(cancelCarry: false);
+    }
 
-        var renderers = block.GetComponentsInChildren<Renderer>(true);
-        foreach (var r in renderers)
-            r.enabled = visible;
+    private void ResetMoveState(bool cancelCarry)
+    {
+        if (cancelCarry && context.Drone != null)
+            context.Drone.CancelCarry();
 
-        var colliders = block.GetComponentsInChildren<Collider>(true);
-        foreach (var c in colliders)
-            c.enabled = visible;
+        state.CancelMove();
+        state.PlaceTool = BuildTool.Single;
+    }
+
+    private void Log(string message)
+    {
+        if (debugLogs && !string.IsNullOrEmpty(message))
+            Debug.Log(message);
     }
 }

@@ -1,67 +1,36 @@
 using UnityEngine;
 
-public class BuildState
+[System.Serializable]
+public sealed class BuildState
 {
-    public int SelectedObjectID { get; private set; }
-    public BuildController.PlaceToolMode PlaceTool { get; private set; }
+    public BuildTool PlaceTool = BuildTool.Single;
+    public int SelectedObjectID = 0;
 
-    // ---------- Line ----------
     public bool HasLineStart { get; private set; }
     public Vector3Int LineStartCell { get; private set; }
 
-    // ---------- Move ----------
+    public bool HasMoveTarget { get; private set; }
     public BlockInstance MoveTarget { get; private set; }
-    public bool HasMoveTarget => MoveTarget != null;
 
-    // ---------- Rotation ----------
-    // 0=0‹, 1=90‹, 2=180‹, 3=270‹
-    public int RotationStep { get; private set; } = 0;
-    public Quaternion CurrentRotation => Quaternion.Euler(0f, RotationStep * 90f, 0f);
+    [SerializeField] private int rotationStep = 0;
 
-    public BuildState(int initialSelectedObjectID, BuildController.PlaceToolMode initialTool)
+    public int RotationStep => rotationStep;
+
+    public Quaternion CurrentRotation
     {
-        SelectedObjectID = initialSelectedObjectID;
-        PlaceTool = initialTool;
+        get { return Quaternion.Euler(0f, rotationStep * 90f, 0f); }
     }
 
-    // -------------------------------------------------------
-    // Tool
-    // -------------------------------------------------------
-    public void ToggleTool()
+    public void RotateCW()
     {
-        PlaceTool = (PlaceTool == BuildController.PlaceToolMode.Single)
-            ? BuildController.PlaceToolMode.Line
-            : BuildController.PlaceToolMode.Single;
+        rotationStep = (rotationStep + 1) % 4;
     }
 
-    public void SetTool(BuildController.PlaceToolMode tool)
+    public void RotateCCW()
     {
-        PlaceTool = tool;
+        rotationStep = (rotationStep + 3) % 4;
     }
 
-    // -------------------------------------------------------
-    // Selection
-    // -------------------------------------------------------
-    public void SetSelectedObjectID(int id)
-    {
-        SelectedObjectID = id;
-    }
-
-    public void StepSelection(int delta, int count)
-    {
-        if (count <= 0) return;
-
-        SelectedObjectID += delta;
-
-        if (SelectedObjectID < 0)
-            SelectedObjectID = count - 1;
-        else if (SelectedObjectID >= count)
-            SelectedObjectID = 0;
-    }
-
-    // -------------------------------------------------------
-    // Line
-    // -------------------------------------------------------
     public void BeginLine(Vector3Int startCell)
     {
         HasLineStart = true;
@@ -74,34 +43,20 @@ public class BuildState
         LineStartCell = default;
     }
 
-    // -------------------------------------------------------
-    // Move
-    // -------------------------------------------------------
     public void BeginMove(BlockInstance target)
     {
+        HasMoveTarget = target != null;
         MoveTarget = target;
     }
 
     public void CancelMove()
     {
+        HasMoveTarget = false;
         MoveTarget = null;
     }
 
-    // -------------------------------------------------------
-    // Rotation
-    // -------------------------------------------------------
-    public void RotateCW()
+    public void ClearMoveTarget()
     {
-        RotationStep = (RotationStep + 1) % 4;
-    }
-
-    public void RotateCCW()
-    {
-        RotationStep = (RotationStep + 3) % 4;
-    }
-
-    public void ResetRotation()
-    {
-        RotationStep = 0;
+        CancelMove();
     }
 }

@@ -44575,32 +44575,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c7b16f843c453746b519a97b31efee5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  initialTool: 0
   grid: {fileID: 1639166971}
-  cam: {fileID: 1520430209}
-  rayDistance: 200
+  database: {fileID: 11400000, guid: 0a5a7522b67f46249a2af2a6ec41ce8c, type: 2}
+  droneCompanion: {fileID: 8845290194134435542}
+  placedBlocksRoot: {fileID: 1993440064}
+  previewMaterial: {fileID: 2100000, guid: a34744e8063123443a34176c0a66f407, type: 2}
   placeMask:
     serializedVersion: 2
     m_Bits: 768
   blockOnlyMask:
     serializedVersion: 2
     m_Bits: 256
+  rayDistance: 200
+  buildCamera: {fileID: 1520430209}
+  state:
+    PlaceTool: 0
+    SelectedObjectID: 0
+    rotationStep: 0
   placeAction: {fileID: 6217279650103845360, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   removeAction: {fileID: 6725273885812366519, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   moveAction: {fileID: 5771513176532437334, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  toggleToolAction: {fileID: -977779647745687168, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  rotateCWAction: {fileID: 801486064517593493, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  rotateCCWAction: {fileID: 4944596212165596431, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   undoAction: {fileID: 7343829938814656369, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   redoAction: {fileID: -8271248406354496046, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  database: {fileID: 11400000, guid: 0a5a7522b67f46249a2af2a6ec41ce8c, type: 2}
-  initialSelectedObjectID: 6
-  placedRoot: {fileID: 1993440064}
-  groundYCell: 0
-  previewMaterial: {fileID: 2100000, guid: a34744e8063123443a34176c0a66f407, type: 2}
-  useDroneCompanion: 1
-  droneCompanion: {fileID: 8845290194134435542}
-  removeDroneDelay: 1
+  rotateCWAction: {fileID: 801486064517593493, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  rotateCCWAction: {fileID: 4944596212165596431, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  toggleToolAction: {fileID: -977779647745687168, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   debugLogs: 1
 --- !u!4 &1636068510
 Transform:
@@ -60774,9 +60773,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3303501467102168519, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2.33
+      objectReference: {fileID: 0}
+    - target: {fileID: 3303501467102168519, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.58
+      objectReference: {fileID: 0}
     - target: {fileID: 6745235233835698563, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
       propertyPath: m_Name
       value: Robot
+      objectReference: {fileID: 0}
+    - target: {fileID: 8680042527918731087, guid: 449e3afc0d8cd5d4bbe805cec0a2163a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.89
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -61378,20 +61389,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9329e03783d34d498b9cf6cdc14ce60, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DroneCompanionController
-  pulseSpeed: 6
-  pulseMinWidth: 0.03
-  pulseMaxWidth: 0.15
   boyTarget: {fileID: 927642634296477356}
   localOffset: {x: 16, y: 50, z: 9}
-  followLerpSpeed: 3
+  followLerpSpeed: 15
   floatAmplitude: 0.08
   floatFrequency: 2
   rotateSpeed: 12
-  reactHeightOffset: 1
+  reactHeightOffset: 3.65
   reactMoveLerpSpeed: 10
   buildHoverOffset: {x: 15, y: 15, z: 0}
   buildMoveLerpSpeed: 14
-  buildDuration: 0.8
+  removeMoveLerpSpeed: 15
+  buildDuration: 1
+  arrivalDistance: 0.08
+  maxApproachTime: 1.5
   laserStartPoint: {fileID: 911648785}
   extraLaserStartPoints:
   - {fileID: 326178870}
@@ -61404,6 +61415,9 @@ MonoBehaviour:
   - {fileID: 695509470}
   laserAppearSpeed: 18
   laserMaxAlpha: 1
+  pulseSpeed: 6
+  pulseMinWidth: 0.03
+  pulseMaxWidth: 0.15
   boundsTopSurfaceOffset: 0.02
   useRendererBoundsFirst: 1
 --- !u!1 &8981863071934798993

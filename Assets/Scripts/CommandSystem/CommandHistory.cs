@@ -1,53 +1,49 @@
 using System.Collections.Generic;
-using UnityEngine;
 
-public class CommandHistory
+public sealed class CommandHistory
 {
-    private readonly Stack<IBuildCommand> undo = new();
-    private readonly Stack<IBuildCommand> redo = new();
+    private readonly Stack<IBuildCommand> undoStack = new Stack<IBuildCommand>();
+    private readonly Stack<IBuildCommand> redoStack = new Stack<IBuildCommand>();
 
-    public bool CanUndo => undo.Count > 0;
-    public bool CanRedo => redo.Count > 0;
-
-    public bool Do(IBuildCommand cmd, bool debugLog = false)
+    public bool Do(IBuildCommand command, bool debugLogs = false)
     {
-        if (cmd == null) return false;
+        if (command == null)
+            return false;
 
-        bool ok = cmd.Execute();
-        if (!ok) return false;
+        bool ok = command.Do(debugLogs);
+        if (!ok)
+            return false;
 
-        undo.Push(cmd);
-        redo.Clear();
-
-        if (debugLog) Debug.Log($"DO: {cmd.Name}");
+        undoStack.Push(command);
+        redoStack.Clear();
         return true;
     }
 
-    public void Undo(bool debugLog = false)
+    public void Undo(bool debugLogs = false)
     {
-        if (undo.Count == 0) return;
+        if (undoStack.Count == 0)
+            return;
 
-        var cmd = undo.Pop();
-        cmd.Undo();
-        redo.Push(cmd);
-
-        if (debugLog) Debug.Log($"UNDO: {cmd.Name}");
+        IBuildCommand cmd = undoStack.Pop();
+        cmd.Undo(debugLogs);
+        redoStack.Push(cmd);
     }
 
-    public void Redo(bool debugLog = false)
+    public void Redo(bool debugLogs = false)
     {
-        if (redo.Count == 0) return;
+        if (redoStack.Count == 0)
+            return;
 
-        var cmd = redo.Pop();
-        bool ok = cmd.Execute();
-        if (ok) undo.Push(cmd);
+        IBuildCommand cmd = redoStack.Pop();
+        bool ok = cmd.Do(debugLogs);
 
-        if (debugLog) Debug.Log($"REDO: {cmd.Name}");
+        if (ok)
+            undoStack.Push(cmd);
     }
 
     public void Clear()
     {
-        undo.Clear();
-        redo.Clear();
+        undoStack.Clear();
+        redoStack.Clear();
     }
 }

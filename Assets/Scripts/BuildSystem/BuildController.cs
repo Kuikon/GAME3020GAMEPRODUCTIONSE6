@@ -1,491 +1,272 @@
-﻿using System.Collections;
-using UnityEngine;
-using UnityEngine.EventSystems;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class BuildController : MonoBehaviour
+public sealed class BuildController : MonoBehaviour
 {
-    public enum PlaceToolMode { Single, Line }
-
-    [Header("Tool (initial)")]
-    [SerializeField] private PlaceToolMode initialTool = PlaceToolMode.Single;
-
-    [Header("Refs")]
+    [Header("Scene References")]
     [SerializeField] private GridManager grid;
-    [SerializeField] private Camera cam;
-
-    [Header("Raycast")]
-    [SerializeField] private float rayDistance = 200f;
-    [SerializeField] private LayerMask placeMask;     // Block + Ground
-    [SerializeField] private LayerMask blockOnlyMask; // Block only
-
-    [Header("Input (Build Map)")]
-    [SerializeField] private InputActionReference placeAction;        // LMB
-    [SerializeField] private InputActionReference removeAction;       // RMB
-    [SerializeField] private InputActionReference moveAction;         // e.g. MMB or key
-    [SerializeField] private InputActionReference toggleToolAction;   // e.g. Tab
-    [SerializeField] private InputActionReference rotateCWAction;     // e.g. E
-    [SerializeField] private InputActionReference rotateCCWAction;    // e.g. Q
-
-    [Header("Undo/Redo")]
-    [SerializeField] private InputActionReference undoAction; // Ctrl+Z
-    [SerializeField] private InputActionReference redoAction; // Ctrl+Y
-
-    [Header("Database (SO)")]
     [SerializeField] private ObjectsDatabaseSO database;
-    [SerializeField] private int initialSelectedObjectID = 0;
-
-    [Header("Placement Root")]
-    [SerializeField] private Transform placedRoot;
-
-    [Header("Ground rule")]
-    [SerializeField] private int groundYCell = 0;
-
-    [Header("Preview")]
+    [SerializeField] private DroneCompanionController droneCompanion;
+    [SerializeField] private Transform placedBlocksRoot;
     [SerializeField] private Material previewMaterial;
 
-    [Header("Drone Companion")]
-    [SerializeField] private bool useDroneCompanion = true;
-    [SerializeField] private DroneCompanionController droneCompanion;
-    [SerializeField] private float removeDroneDelay = 0.25f;
+    [Header("Raycast")]
+    [SerializeField] private LayerMask placeMask;
+    [SerializeField] private LayerMask blockOnlyMask;
+    [SerializeField] private float rayDistance = 200f;
+    [SerializeField] private Camera buildCamera;
+    [Header("State")]
+    [SerializeField] private BuildState state = new BuildState();
+
+    [Header("Input")]
+    [SerializeField] private InputActionReference placeAction;
+    [SerializeField] private InputActionReference removeAction;
+    [SerializeField] private InputActionReference moveAction;
+    [SerializeField] private InputActionReference undoAction;
+    [SerializeField] private InputActionReference redoAction;
+    [SerializeField] private InputActionReference rotateCWAction;
+    [SerializeField] private InputActionReference rotateCCWAction;
+    [SerializeField] private InputActionReference toggleToolAction;
 
     [Header("Debug")]
-    [SerializeField] private bool debugLogs = true;
+    [SerializeField] private bool debugLogs = false;
 
-    public BuildPlacementRules Rules => rules;
-    public BuildSpawner Spawner => spawner;
-
-    // Parts
     private BuildRaycaster raycaster;
     private BuildPlacementSolver solver;
     private BuildSpawner spawner;
-    private BuildState state;
     private BuildPlacementRules rules;
-    private CommandHistory history;
     private BuildPreview preview;
-    private BuildPlacementService placementService;
-    private BuildMoveService moveService;
-    private BuildRemoveService removeService;
-    private BuildPreviewService previewService;
 
-    private Coroutine removeRoutine;
+    private CommandHistory history;
+    private BuildContext context;
+    private BuildApplicationService app;
+
+    public BuildState State => state;
+    public BuildContext Context => context;
+    public BuildSpawner Spawner => spawner;
+    public BuildPlacementRules Rules => rules;
 
     private void Awake()
     {
-        if (cam == null)
-            cam = Camera.main;
+        ValidateReferences();
 
-        raycaster = new BuildRaycaster(cam, rayDistance, placeMask, blockOnlyMask);
-        solver = new BuildPlacementSolver(grid, groundYCell);
-        state = new BuildState(initialSelectedObjectID, initialTool);
-        rules = new BuildPlacementRules(grid);
-        spawner = new BuildSpawner(placedRoot);
         history = new CommandHistory();
+
+        raycaster = new BuildRaycaster(buildCamera, rayDistance, placeMask, blockOnlyMask);
+        solver = new BuildPlacementSolver(grid,0);
+        spawner = new BuildSpawner(placedBlocksRoot);
+        rules = new BuildPlacementRules(grid);
         preview = new BuildPreview(grid, previewMaterial);
 
-        placementService = new BuildPlacementService(
+        DroneService droneService = new DroneService(droneCompanion);
+
+        context = new BuildContext(
             grid,
             raycaster,
             solver,
             spawner,
             rules,
-            database,
             history,
-            useDroneCompanion ? droneCompanion : null
-        );
-
-        moveService = new BuildMoveService(
-            grid,
-            raycaster,
-            solver,
-            spawner,
-            rules,
-            history
-        );
-
-        removeService = new BuildRemoveService(
-            grid,
-            spawner,
-            rules,
             database,
-            history,
-            useDroneCompanion ? droneCompanion : null
-        );
+            preview,
+            droneService);
 
-        previewService = new BuildPreviewService(
-            raycaster,
-            solver,
-            rules,
-            preview
-        );
-
-        WarnIfMissing();
+        app = new BuildApplicationService(context, state, debugLogs);
     }
 
     private void OnEnable()
     {
-        EnableActions(true);
-        SubscribeActions(true);
+        BindInput(placeAction, OnPlacePerformed);
+        BindInput(removeAction, OnRemovePerformed);
+        BindInput(moveAction, OnMovePerformed);
+        BindInput(undoAction, OnUndoPerformed);
+        BindInput(redoAction, OnRedoPerformed);
+        BindInput(rotateCWAction, OnRotateCWPerformed);
+        BindInput(rotateCCWAction, OnRotateCCWPerformed);
+        BindInput(toggleToolAction, OnToggleToolPerformed);
     }
 
     private void OnDisable()
     {
-        SubscribeActions(false);
-        EnableActions(false);
-
-        if (removeRoutine != null)
-        {
-            StopCoroutine(removeRoutine);
-            removeRoutine = null;
-        }
-
-        preview?.Clear();
-        state?.CancelLine();
-        state?.CancelMove();
+        UnbindInput(placeAction, OnPlacePerformed);
+        UnbindInput(removeAction, OnRemovePerformed);
+        UnbindInput(moveAction, OnMovePerformed);
+        UnbindInput(undoAction, OnUndoPerformed);
+        UnbindInput(redoAction, OnRedoPerformed);
+        UnbindInput(rotateCWAction, OnRotateCWPerformed);
+        UnbindInput(rotateCCWAction, OnRotateCCWPerformed);
+        UnbindInput(toggleToolAction, OnToggleToolPerformed);
     }
 
     private void Update()
     {
-        if (!isActiveAndEnabled)
+        if (app == null)
             return;
 
-        if (IsDroneBusy())
-        {
-            preview?.Clear();
-            return;
-        }
-
-        if (IsPointerOverUI())
-        {
-            preview?.Clear();
-            return;
-        }
-
-        UpdatePreview();
+        app.TickPreview();
     }
 
-    // -------------------------------------------------------
-    // Setup helpers
-    // -------------------------------------------------------
-    private void WarnIfMissing()
+    public void SetSelectedObject(int objectId)
     {
-        if (!debugLogs)
-            return;
-
-        if (previewMaterial == null)
-            Debug.LogWarning("BuildController: previewMaterial is not assigned.");
-
-        if (grid == null)
-            Debug.LogWarning("BuildController: grid is not assigned.");
-
-        if (database == null)
-            Debug.LogWarning("BuildController: database is not assigned.");
-
-        if (cam == null)
-            Debug.LogWarning("BuildController: cam is not assigned.");
-
-        if (useDroneCompanion && droneCompanion == null)
-            Debug.LogWarning("BuildController: droneCompanion is not assigned.");
+        state.SelectedObjectID = objectId;
+        app?.RefreshPreview();
     }
 
-    private void EnableActions(bool enable)
+    public void SetTool(BuildTool tool)
     {
-        SetActionEnabled(placeAction, enable);
-        SetActionEnabled(removeAction, enable);
-        SetActionEnabled(moveAction, enable);
-        SetActionEnabled(toggleToolAction, enable);
-        SetActionEnabled(rotateCWAction, enable);
-        SetActionEnabled(rotateCCWAction, enable);
-        SetActionEnabled(undoAction, enable);
-        SetActionEnabled(redoAction, enable);
+        if (tool != BuildTool.Move)
+            app?.CancelMove();
+
+        state.PlaceTool = tool;
+
+        if (tool != BuildTool.Line)
+            state.CancelLine();
+
+        app?.RefreshPreview();
     }
 
-    private void SubscribeActions(bool subscribe)
+    public void RotateCW()
     {
-        HookPerformed(placeAction, subscribe, OnPlacePerformed);
-        HookPerformed(removeAction, subscribe, OnRemovePerformed);
-        HookPerformed(moveAction, subscribe, OnMovePerformed);
-        HookPerformed(toggleToolAction, subscribe, OnToggleToolPerformed);
-        HookPerformed(rotateCWAction, subscribe, OnRotateCWPerformed);
-        HookPerformed(rotateCCWAction, subscribe, OnRotateCCWPerformed);
-        HookPerformed(undoAction, subscribe, OnUndoPerformed);
-        HookPerformed(redoAction, subscribe, OnRedoPerformed);
-    }
-
-    private static void SetActionEnabled(InputActionReference a, bool enable)
-    {
-        if (a == null || a.action == null)
-            return;
-
-        if (enable) a.action.Enable();
-        else a.action.Disable();
-    }
-
-    private static void HookPerformed(
-        InputActionReference a,
-        bool subscribe,
-        System.Action<InputAction.CallbackContext> cb)
-    {
-        if (a == null || a.action == null || cb == null)
-            return;
-
-        if (subscribe) a.action.performed += cb;
-        else a.action.performed -= cb;
-    }
-
-    private static bool IsPointerOverUI()
-    {
-        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-    }
-
-    // -------------------------------------------------------
-    // Input callbacks
-    // -------------------------------------------------------
-    private void OnUndoPerformed(InputAction.CallbackContext _)
-    {
-        history.Undo(debugLogs);
-    }
-
-    private void OnRedoPerformed(InputAction.CallbackContext _)
-    {
-        history.Redo(debugLogs);
-    }
-
-    private void OnToggleToolPerformed(InputAction.CallbackContext _)
-    {
-        state.ToggleTool();
-        preview?.Clear();
-    }
-
-    private void OnRotateCWPerformed(InputAction.CallbackContext _)
-    {
-        if (IsPointerOverUI())
-            return;
-
         state.RotateCW();
-        preview?.Clear();
+        app?.RefreshPreview();
     }
 
-    private void OnRotateCCWPerformed(InputAction.CallbackContext _)
+    public void RotateCCW()
     {
-        if (IsPointerOverUI())
-            return;
-
         state.RotateCCW();
-        preview?.Clear();
+        app?.RefreshPreview();
+    }
+
+    public void Undo()
+    {
+        app?.Undo();
+        app?.RefreshPreview();
+    }
+
+    public void Redo()
+    {
+        app?.Redo();
+        app?.RefreshPreview();
+    }
+
+    public void CancelCurrentOperation()
+    {
+        app?.CancelMove();
+        state.CancelLine();
+        context?.Preview?.Clear();
+        context?.Drone?.SetIdle();
     }
 
     private void OnPlacePerformed(InputAction.CallbackContext _)
     {
-        if (IsPointerOverUI())
+        if (app == null)
             return;
-
-        if (!TryGetSelectedData(out var data))
+        if (droneCompanion && droneCompanion != null && droneCompanion.IsBusy)
+        {
+            if (debugLogs)
+                Debug.Log("[Build] Drone is busy. Placement blocked.");
             return;
-
-        GameObject spawnedObject;
-        bool ok = placementService.HandlePlaceInput(state, data, debugLogs, out spawnedObject);
-
-        if (ok)
-        {
-            previewService.Clear();
-            NotifyDroneBuild(spawnedObject);
         }
-        else
-        {
-            // Line開始だけのときは false になることあり
-            NotifyDroneIdle();
-        }
+        app.Place();
+        app.RefreshPreview();
     }
 
     private void OnRemovePerformed(InputAction.CallbackContext _)
     {
-        if (IsPointerOverUI())
+        if (app == null)
             return;
-
-        if (!raycaster.TryGetRemoveTarget(out var targetTransform))
-            return;
-
-        if (targetTransform == null)
-            return;
-
-        BlockInstance block = targetTransform.GetComponent<BlockInstance>();
-        if (block == null)
-            block = targetTransform.GetComponentInParent<BlockInstance>();
-
-        if (block == null)
+        if (droneCompanion != null && droneCompanion.IsBusy)
         {
             if (debugLogs)
-                Debug.LogWarning("[Remove] BlockInstance not found on remove target.");
+                Debug.Log("[Build] Drone is busy. Remove blocked.");
             return;
         }
-
-        if (removeRoutine != null)
-        {
-            StopCoroutine(removeRoutine);
-            removeRoutine = null;
-        }
-
-        removeRoutine = StartCoroutine(CoRemoveWithDrone(block));
-    }
-
-    private IEnumerator CoRemoveWithDrone(BlockInstance targetBlock)
-    {
-        if (targetBlock == null)
-            yield break;
-
-        Transform targetTransform = targetBlock.transform;
-
-        if (useDroneCompanion && droneCompanion != null && targetTransform != null)
-        {
-            droneCompanion.PlayRemove(targetTransform);
-
-            // ❗ここで削除しないと永遠に終わらない
-            yield return new WaitForSeconds(0.1f); // 少しだけ動く時間
-        }
-
-        // ★ここで削除
-        removeService.TryRemoveBlock(targetBlock, debugLogs);
-
-        // ★Remove完了まで待つ
-        if (useDroneCompanion && droneCompanion != null)
-        {
-            yield return new WaitWhile(() => droneCompanion.IsRemoving);
-        }
+        app.Remove();
+        app.RefreshPreview();
     }
 
     private void OnMovePerformed(InputAction.CallbackContext _)
     {
-        if (IsPointerOverUI())
+        if (app == null)
             return;
 
-        bool ok = moveService.HandleMoveInput(state, debugLogs);
-
-        if (ok && !state.HasMoveTarget)
-            previewService.Clear();
+        state.PlaceTool = BuildTool.Move;
+        app.Move();
+        app.RefreshPreview();
     }
 
-    // -------------------------------------------------------
-    // Selected object
-    // -------------------------------------------------------
-    private bool TryGetSelectedData(out ObjectData data)
+    private void OnUndoPerformed(InputAction.CallbackContext _)
     {
-        data = null;
-
-        if (database == null)
-            return false;
-
-        int id = (state != null) ? state.SelectedObjectID : initialSelectedObjectID;
-
-        if (!database.TryGetByID(id, out data))
-            return false;
-
-        return data != null && data.Prefab != null;
+        Undo();
     }
 
-    public void SetSelectedObject(int objectID)
+    private void OnRedoPerformed(InputAction.CallbackContext _)
     {
-        state?.SetSelectedObjectID(objectID);
-        preview?.Clear();
+        Redo();
     }
 
-    // -------------------------------------------------------
-    // Drone
-    // -------------------------------------------------------
-    private void NotifyDroneBuild(GameObject spawnedObject)
+    private void OnRotateCWPerformed(InputAction.CallbackContext _)
     {
-        if (!useDroneCompanion || droneCompanion == null)
-            return;
+        RotateCW();
+    }
 
-        if (spawnedObject == null)
+    private void OnRotateCCWPerformed(InputAction.CallbackContext _)
+    {
+        RotateCCW();
+    }
+
+    private void OnToggleToolPerformed(InputAction.CallbackContext _)
+    {
+        ToggleTool();
+        app?.RefreshPreview();
+    }
+
+    private void ToggleTool()
+    {
+        if (state.PlaceTool == BuildTool.Single)
         {
-            droneCompanion.SetIdle();
+            state.PlaceTool = BuildTool.Line;
+            state.CancelLine();
+            app?.CancelMove();
             return;
         }
 
-        droneCompanion.PlayBuild(spawnedObject);
-    }
-
-    private void NotifyDroneIdle()
-    {
-        if (!useDroneCompanion || droneCompanion == null)
-            return;
-
-        if (droneCompanion.IsBusy)
-            return;
-
-        droneCompanion.SetIdle();
-    }
-
-    private bool IsDroneBusy()
-    {
-        return useDroneCompanion &&
-               droneCompanion != null &&
-               droneCompanion.IsBusy;
-    }
-
-    // -------------------------------------------------------
-    // Preview
-    // -------------------------------------------------------
-    private void UpdatePreview()
-    {
-        // Move previewを使うならここを有効化
-        // if (state != null && state.HasMoveTarget && state.MoveTarget != null)
-        // {
-        //     UpdateMovePreview();
-        //     return;
-        // }
-
-        if (!TryGetSelectedData(out var data))
+        if (state.PlaceTool == BuildTool.Line)
         {
-            preview?.Clear();
-            if (!IsDroneBusy())
-                NotifyDroneIdle();
+            state.PlaceTool = BuildTool.Single;
+            state.CancelLine();
+            app?.CancelMove();
             return;
         }
 
-        previewService.UpdatePreview(state, data);
+        state.PlaceTool = BuildTool.Single;
+        app?.CancelMove();
     }
 
-    private void UpdateMovePreview()
+    private void ValidateReferences()
     {
-        var moveTarget = state.MoveTarget;
-        if (moveTarget == null)
-        {
-            preview?.Clear();
-            if (!IsDroneBusy())
-                NotifyDroneIdle();
-            return;
-        }
-
-        if (!raycaster.TryGetPlaceHit(out var hit))
-        {
-            preview?.Clear();
-            return;
-        }
-
-        if (!solver.TrySolveOriginCell(hit, moveTarget.SizeXYZ, out var previewCell))
-        {
-            preview?.Clear();
-            return;
-        }
-
-        string reason;
-        bool canPlace = rules.CanPlaceIgnoring(moveTarget, previewCell, moveTarget.SizeXYZ, out reason);
-
-        Vector3 worldPos = grid.BoxToWorldCenter(previewCell, moveTarget.SizeXYZ);
-
-        preview.ShowMovePreview(moveTarget.gameObject, worldPos);
-        preview.SetValid(canPlace);
-
-        if (debugLogs && !canPlace && !string.IsNullOrEmpty(reason))
-            Debug.Log($"[MovePreview] invalid: {reason}");
+        if (grid == null) Debug.LogError("[BuildController] GridManager is missing.", this);
+        if (database == null) Debug.LogError("[BuildController] ObjectsDatabaseSO is missing.", this);
+        if (buildCamera == null) Debug.LogError("[BuildController] Build Camera is missing.", this);
+        if (placedBlocksRoot == null) Debug.LogError("[BuildController] placedBlocksRoot is missing.", this);
+        if (previewMaterial == null) Debug.LogError("[BuildController] Preview Material is missing.", this);
     }
 
-    // -------------------------------------------------------
-    private void Log(string msg)
+    private static void BindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
     {
-        if (debugLogs && !string.IsNullOrEmpty(msg))
-            Debug.Log(msg);
+        if (actionRef == null || actionRef.action == null)
+            return;
+
+        actionRef.action.performed += callback;
+        actionRef.action.Enable();
+    }
+
+    private static void UnbindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
+    {
+        if (actionRef == null || actionRef.action == null)
+            return;
+
+        actionRef.action.performed -= callback;
+        actionRef.action.Disable();
     }
 }
