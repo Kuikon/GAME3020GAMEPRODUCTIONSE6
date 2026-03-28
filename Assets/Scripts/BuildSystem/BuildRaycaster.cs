@@ -20,16 +20,6 @@ public class BuildRaycaster
     {
         return cam.ScreenPointToRay(Mouse.current.position.ReadValue());
     }
-    public bool TryGetPlaceHit(out RaycastHit hit)
-    {
-        hit = default;
-        if (cam == null || Mouse.current == null) return false;
-
-        Ray ray = MakeMouseRay();
-        Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.green, 0.05f);
-
-        return Physics.Raycast(ray, out hit, rayDistance, placeMask, QueryTriggerInteraction.Ignore);
-    }
     public bool RaycastForBlock(out RaycastHit hit)
     {
         hit = default;

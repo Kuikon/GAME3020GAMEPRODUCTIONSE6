@@ -30,20 +30,6 @@ public class BuildSpawner
         return obj;
     }
 
-    public void MoveExisting(GridManager grid, BlockInstance target, Vector3Int originCell, Vector3Int sizeXYZ, Quaternion rot)
-    {
-        if (grid == null || target == null) return;
-
-        Vector3Int rotatedSize = GetRotatedSize(sizeXYZ, rot);
-        Vector3 world = grid.BoxToWorldCenter(originCell, rotatedSize);
-
-        target.transform.position = world;
-        target.transform.rotation = rot;
-
-        // BlockInstance ÇÃï€éùèÓïÒÇ‡çXêVÇµÇΩÇ¢Ç»ÇÁ
-        target.Setup(target.ObjectID, originCell, rotatedSize, rot);
-    }
-
     private Vector3Int GetRotatedSize(Vector3Int originalSize, Quaternion rot)
     {
         float y = Mathf.Round(rot.eulerAngles.y) % 360f;

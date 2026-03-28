@@ -14,7 +14,6 @@ public sealed class BuildState
 
     [SerializeField] private int rotationStep = 0;
 
-    public int RotationStep => rotationStep;
 
     public Quaternion CurrentRotation
     {
@@ -53,10 +52,5 @@ public sealed class BuildState
     {
         HasMoveTarget = false;
         MoveTarget = null;
-    }
-
-    public void ClearMoveTarget()
-    {
-        CancelMove();
     }
 }

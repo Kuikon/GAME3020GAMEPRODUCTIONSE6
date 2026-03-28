@@ -208,28 +208,6 @@ public class BuildPlacementRules
         return false;
     }
 
-    public int CountCategoryPlaced(
-        ObjectsDatabaseSO database,
-        ObjectCategory category,
-        BlockInstance ignore = null)
-    {
-        int count = 0;
-
-        foreach (var obj in EnumerateUniqueOccupiedObjects())
-        {
-            if (obj == null) continue;
-            if (obj == ignore) continue;
-
-            if (!TryGetObjectCategory(obj, database, out var placedCategory))
-                continue;
-
-            if (placedCategory == category)
-                count++;
-        }
-
-        return count;
-    }
-
     // -------------------------
     // Helpers
     // -------------------------
@@ -287,11 +265,6 @@ public class BuildPlacementRules
 
         foreach (var c in grid.GetCellsInBox(originCell, sizeXYZ))
             occupied.Remove(c);
-    }
-
-    public void ClearCell(Vector3Int cell)
-    {
-        occupied.Remove(cell);
     }
 
     public void ClearAll()
