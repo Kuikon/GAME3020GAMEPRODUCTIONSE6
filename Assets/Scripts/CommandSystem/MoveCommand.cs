@@ -13,6 +13,12 @@ public sealed class MoveCommand : IBuildCommand
 
     public string Name => commandName;
 
+    public BlockInstance TargetBlock => target;
+    public Vector3Int FromCell => fromCell;
+    public Vector3Int ToCell => toCell;
+    public Quaternion Rotation => rotation;
+    public Vector3Int SizeXYZ => size;
+
     public MoveCommand(
         BuildContext context,
         BlockInstance target,
@@ -32,7 +38,7 @@ public sealed class MoveCommand : IBuildCommand
         }
     }
 
-    public bool Do(bool debugLogs = false)
+    public bool Do(bool debugLogs = false, bool playEffects = true)
     {
         if (context == null || target == null)
             return false;
@@ -52,7 +58,7 @@ public sealed class MoveCommand : IBuildCommand
         return true;
     }
 
-    public void Undo(bool debugLogs = false)
+    public void Undo(bool debugLogs = false, bool playEffects = true)
     {
         if (context == null || target == null)
             return;

@@ -167,7 +167,6 @@ public class DroneCompanionController : MonoBehaviour
         laserVisible = false;
         HideAllLasersImmediate();
         SetRenderersVisible(currentBuildObject, false);
-
         buildRoutine = StartCoroutine(CoBuildSequence());
     }
 
@@ -427,6 +426,9 @@ public class DroneCompanionController : MonoBehaviour
         laserVisible = true;
         ShowAllLasersImmediate();
 
+        // Ç±Ç±Ç≈çÌèúäJénÇ≥ÇπÇÈ
+        SequenceFinished?.Invoke();
+
         float removeLaserDuration = 0.5f;
         float t = 0f;
 
@@ -447,8 +449,6 @@ public class DroneCompanionController : MonoBehaviour
         HideAllLasersImmediate();
         currentState = DroneState.Idle;
         removeRoutine = null;
-
-        SequenceFinished?.Invoke();
     }
 
     private IEnumerator CoCommitCarrySequence()

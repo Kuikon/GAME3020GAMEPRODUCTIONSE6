@@ -61400,7 +61400,9 @@ MonoBehaviour:
   buildHoverOffset: {x: 15, y: 15, z: 0}
   buildMoveLerpSpeed: 14
   removeMoveLerpSpeed: 15
+  carryMoveLerpSpeed: 12
   buildDuration: 1
+  carryCommitFadeDuration: 0.12
   arrivalDistance: 0.08
   maxApproachTime: 1.5
   laserStartPoint: {fileID: 911648785}

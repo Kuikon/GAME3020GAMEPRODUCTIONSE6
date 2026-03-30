@@ -12,11 +12,11 @@ public sealed class BuildApplicationService
 
     private bool operationPending;
 
-    private bool pendingPlace;
+
     private Vector3Int pendingPlaceCell;
     private ObjectData pendingPlaceData;
     private Quaternion pendingPlaceRotation;
-
+    private bool pendingPlace;
     private bool pendingRemove;
     private BlockInstance pendingRemoveTarget;
 
@@ -70,7 +70,7 @@ public sealed class BuildApplicationService
             return false;
         }
 
-        if (context.Drone != null && context.Drone.IsBusy)
+        if (context.Drone != null && (context.Drone.IsBusy || context.Drone.IsCarrying))
         {
             return false;
         }
@@ -117,7 +117,7 @@ public sealed class BuildApplicationService
             return false;
         }
 
-        if (context.Drone != null && context.Drone.IsBusy)
+        if (context.Drone != null && (context.Drone.IsBusy || context.Drone.IsCarrying))
         {
             return false;
         }
@@ -175,7 +175,12 @@ public sealed class BuildApplicationService
             return;
         }
 
-        context.History.Undo(debugLogs);
+        if (context.Drone != null && (context.Drone.IsBusy || context.Drone.IsCarrying))
+        {
+            return;
+        }
+
+        context.History.Undo(debugLogs, playEffects: true);
         RefreshPreview();
     }
 
@@ -186,7 +191,12 @@ public sealed class BuildApplicationService
             return;
         }
 
-        context.History.Redo(debugLogs);
+        if (context.Drone != null && (context.Drone.IsBusy || context.Drone.IsCarrying))
+        {
+            return;
+        }
+
+        context.History.Redo(debugLogs, playEffects: true);
         RefreshPreview();
     }
 

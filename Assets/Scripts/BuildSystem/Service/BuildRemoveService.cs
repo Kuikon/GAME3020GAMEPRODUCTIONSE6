@@ -13,16 +13,6 @@ public sealed class BuildRemoveService
         this.debugLogs = debugLogs;
     }
 
-    // 旧API:
-    // まだ app.Remove() を使っている間も壊れないように残しておく
-    public bool TryRemove()
-    {
-        if (!TryCreateRemoveRequest(out BlockInstance target, debugLogs))
-            return false;
-
-        return TryRemoveReserved(target, debugLogs);
-    }
-
     // 予約段階:
     // 今 raycast で見ている削除対象を確定するだけ
     public bool TryCreateRemoveRequest(out BlockInstance target, bool debugLogs = false)
@@ -64,20 +54,10 @@ public sealed class BuildRemoveService
         return TryRemoveAtCell(target.OriginCell, debugLogs);
     }
 
-    public bool TryRemoveAtCell(Vector3Int anyCell)
-    {
-        return TryRemoveAtCell(anyCell, debugLogs);
-    }
-
     public bool TryRemoveAtCell(Vector3Int anyCell, bool debugLogsOverride)
     {
         RemoveCommand cmd = new RemoveCommand(context, anyCell);
-        return context.History.Do(cmd, debugLogsOverride);
-    }
-
-    public bool TryRemoveBlock(BlockInstance target)
-    {
-        return TryRemoveReserved(target, debugLogs);
+        return context.History.Do(cmd, debugLogsOverride, playEffects: true);
     }
 
     private void Log(string msg, bool enabled)

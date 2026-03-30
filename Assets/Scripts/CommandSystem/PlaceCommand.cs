@@ -10,8 +10,13 @@ public sealed class PlaceCommand : IBuildCommand
 
     private GameObject spawned;
 
-    public GameObject SpawnedObject => spawned;
     public string Name => $"Place {data?.Name} @ {originCell}";
+    public GameObject SpawnedObject => spawned;
+
+    public Vector3Int OriginCell => originCell;
+    public Vector3Int SizeXYZ => rotatedSize;
+    public Quaternion Rotation => rotation;
+    public ObjectData Data => data;
 
     public PlaceCommand(
         BuildContext context,
@@ -28,7 +33,7 @@ public sealed class PlaceCommand : IBuildCommand
             : (data != null ? data.SizeXYZ : Vector3Int.one);
     }
 
-    public bool Do(bool debugLogs = false)
+    public bool Do(bool debugLogs = false, bool playEffects = true)
     {
         if (context == null || data == null || data.Prefab == null)
             return false;
@@ -49,16 +54,38 @@ public sealed class PlaceCommand : IBuildCommand
         }
 
         RegisterSpawned(spawned);
-        context.Drone?.PlayBuild(spawned);
+
+        if (playEffects)
+            context.Drone?.PlayBuild(spawned);
+
+        if (debugLogs)
+            Debug.Log($"[PlaceCommand] Do @ {originCell}");
+
         return true;
     }
 
-    public void Undo(bool debugLogs = false)
+    public void Undo(bool debugLogs = false, bool playEffects = true)
     {
         if (spawned == null)
             return;
 
         UnregisterSpawned();
+
+        GameObject target = spawned;
+
+        if (playEffects)
+        {
+            BuildEffectUtility.PlayDestroyEffect(target, () =>
+            {
+                Object.Destroy(target);
+            });
+        }
+        else
+        {
+            Object.Destroy(target);
+        }
+
+        spawned = null;
 
         if (debugLogs)
             Debug.Log($"[PlaceCommand] Undo @ {originCell}");

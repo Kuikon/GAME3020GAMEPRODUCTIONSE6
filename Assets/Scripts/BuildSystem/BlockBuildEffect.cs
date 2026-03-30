@@ -29,7 +29,12 @@ public class BlockBuildEffect : MonoBehaviour
     [SerializeField] private AnimationCurve dropCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
     private Coroutine playingRoutine;
+    private Vector3 originalScale;
 
+    private void Awake()
+    {
+        originalScale = transform.localScale;
+    }
     public void PlayBuild()
     {
         if (playingRoutine != null)
@@ -134,7 +139,7 @@ public class BlockBuildEffect : MonoBehaviour
     private IEnumerator CoPlayPickup()
     {
         Vector3 startPosition = transform.position;
-        Vector3 startScale = transform.localScale;
+        Vector3 startScale = originalScale;
 
         Vector3 endPosition = startPosition + Vector3.up * pickupRiseDistance;
         Vector3 endScale = startScale * pickupScaleMultiplier;
@@ -161,7 +166,7 @@ public class BlockBuildEffect : MonoBehaviour
     private IEnumerator CoPlayDrop()
     {
         Vector3 finalPosition = transform.position;
-        Vector3 finalScale = transform.localScale;
+        Vector3 finalScale = originalScale;
 
         Vector3 startPosition = finalPosition + Vector3.up * dropStartHeight;
         Vector3 startScale = finalScale * dropStartScaleMultiplier;

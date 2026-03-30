@@ -39,7 +39,9 @@ public sealed class BuildMoveService
         }
 
         state.BeginMove(target);
+
         BuildEffectUtility.PlayPickupEffect(target.gameObject);
+
         if (context.Drone != null)
             context.Drone.BeginCarry(target.transform);
 
@@ -74,7 +76,7 @@ public sealed class BuildMoveService
             toCell,
             "Move Block");
 
-        bool ok = context.History.Do(cmd, debugLogs);
+        bool ok = context.History.Do(cmd, debugLogs, playEffects: false);
 
         if (!ok)
         {
@@ -143,7 +145,10 @@ public sealed class BuildMoveService
     {
         if (context.Drone != null && targetBlock != null)
             context.Drone.CommitCarry(targetBlock.transform);
-        BuildEffectUtility.PlayDropEffect(targetBlock.gameObject);
+
+        if (targetBlock != null)
+            BuildEffectUtility.PlayDropEffect(targetBlock.gameObject);
+
         ResetMoveState(cancelCarry: false);
     }
 

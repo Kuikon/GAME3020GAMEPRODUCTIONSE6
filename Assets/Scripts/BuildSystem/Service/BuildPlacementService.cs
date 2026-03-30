@@ -185,7 +185,7 @@ public sealed class BuildPlacementService
         bool debugLogsOverride)
     {
         PlaceCommand cmd = new PlaceCommand(context, hoverCell, data, rotation);
-        return context.History.Do(cmd, debugLogsOverride);
+        return context.History.Do(cmd, debugLogsOverride, playEffects: true);
     }
 
     private bool TryPlaceLineReserved(

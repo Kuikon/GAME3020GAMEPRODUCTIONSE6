@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public sealed class RemoveCommand : IBuildCommand
 {
@@ -15,13 +15,21 @@ public sealed class RemoveCommand : IBuildCommand
 
     public string Name => $"Remove @ {anyCell}";
 
+    // BuildApplicationService から参照しやすいように公開
+    public Vector3Int RemovedOriginCell => removedOriginCell;
+    public Vector3Int RemovedSize => removedSize;
+    public Quaternion RemovedRotation => removedRotation;
+    public ObjectData RemovedData => removedData;
+    public GameObject RemovedObject => removedObject;
+    public BlockInstance CurrentBlock => removedBlock;
+
     public RemoveCommand(BuildContext context, Vector3Int anyCell)
     {
         this.context = context;
         this.anyCell = anyCell;
     }
 
-    public bool Do(bool debugLogs = false)
+    public bool Do(bool debugLogs = false, bool playEffects = true)
     {
         if (context == null)
             return false;
@@ -45,23 +53,28 @@ public sealed class RemoveCommand : IBuildCommand
             return false;
         }
 
-        context.Drone?.PlayRemove(removedObject.transform);
-
         context.Rules.RemoveObjectCells(removedOriginCell, removedSize);
 
-        GameObject target = removedObject;
-
-        BuildEffectUtility.PlayDestroyEffect(target, () =>
+        if (playEffects)
         {
-            Object.Destroy(target);
-        });
+            GameObject target = removedObject;
+            BuildEffectUtility.PlayDestroyEffect(target, () =>
+            {
+                Object.Destroy(target);
+            });
+        }
+        else
+        {
+            Object.Destroy(removedObject);
+        }
 
         if (debugLogs)
             Debug.Log($"[RemoveCommand] Removed {removedData.Name} @ {removedOriginCell}");
 
         return true;
     }
-    public void Undo(bool debugLogs = false)
+
+    public void Undo(bool debugLogs = false, bool playEffects = true)
     {
         if (context == null || removedData == null)
             return;
@@ -84,7 +97,8 @@ public sealed class RemoveCommand : IBuildCommand
         removedObject = respawned;
         removedBlock = block;
 
-        BuildEffectUtility.PlayBuildEffect(removedObject);
+        if (playEffects)
+            context.Drone?.PlayBuild(removedObject);
 
         if (debugLogs)
             Debug.Log($"[RemoveCommand] Undo success @ {removedOriginCell}");
