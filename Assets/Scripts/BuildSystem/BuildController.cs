@@ -113,7 +113,7 @@ public sealed class BuildController : MonoBehaviour
     }
     public void SetSelectedColor(BlockColor color)
     {
-        SelectedColor = color;
+        state.SetSelectedColor(color);
         app?.RefreshPreview();
     }
     public void SetTool(BuildTool tool)

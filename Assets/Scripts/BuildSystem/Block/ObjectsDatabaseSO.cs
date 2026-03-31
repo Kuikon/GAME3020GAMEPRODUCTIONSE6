@@ -40,25 +40,6 @@ public class ObjectsDatabaseSO : ScriptableObject
 
         return result;
     }
-
-    public bool TryGetBySpecialType(SpecialBlockType specialType, out ObjectData data)
-    {
-        for (int i = 0; i < objectsData.Count; i++)
-        {
-            ObjectData obj = objectsData[i];
-            if (obj == null)
-                continue;
-
-            if (obj.SpecialType == specialType)
-            {
-                data = obj;
-                return true;
-            }
-        }
-
-        data = null;
-        return false;
-    }
 }
 
 [Serializable]
@@ -120,5 +101,25 @@ public class ObjectData
         if (yellowPrefab != null) return yellowPrefab;
         if (greenPrefab != null) return greenPrefab;
         return null;
+    }
+    public bool HasExactColorVariant(BlockColor color)
+    {
+        switch (color)
+        {
+            case BlockColor.Blue:
+                return bluePrefab != null;
+
+            case BlockColor.Red:
+                return redPrefab != null;
+
+            case BlockColor.Yellow:
+                return yellowPrefab != null;
+
+            case BlockColor.Green:
+                return greenPrefab != null;
+
+            default:
+                return false;
+        }
     }
 }

@@ -6,7 +6,6 @@ public sealed class BuildState
     public BuildTool PlaceTool = BuildTool.Single;
     public int SelectedObjectID = 0;
 
-    // ’Ç‰ÁFŒ»İ‘I‘ğ’†‚ÌF
     public BlockColor SelectedColor = BlockColor.Blue;
 
     public bool HasLineStart { get; private set; }
