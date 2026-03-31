@@ -59,7 +59,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 3
-  m_Spacing: 50
+  m_Spacing: 107.4
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0
   m_ChildControlWidth: 0
@@ -115,7 +115,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 278, y: -103}
+  m_AnchoredPosition: {x: 358, y: -103}
   m_SizeDelta: {x: 169.66, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2983494240216239478
@@ -278,10 +278,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 634663751636633533}
     m_Modifications:
-    - target: {fileID: 2281502542054817247, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -6
-      objectReference: {fileID: 0}
     - target: {fileID: 5315519098357576603, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
       propertyPath: m_Name
       value: ColorVariantButtonUI
@@ -366,14 +362,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8728968921458609126, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -1
-      objectReference: {fileID: 0}
-    - target: {fileID: 9061743662927067296, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -394,7 +382,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2281502542054817247, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -6
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 5315519098357576603, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
       propertyPath: m_Name
@@ -508,7 +496,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2281502542054817247, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -6
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 5315519098357576603, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
       propertyPath: m_Name
@@ -620,10 +608,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 634663751636633533}
     m_Modifications:
-    - target: {fileID: 2281502542054817247, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -6
-      objectReference: {fileID: 0}
     - target: {fileID: 5315519098357576603, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
       propertyPath: m_Name
       value: ColorVariantButtonUI (1)
@@ -706,14 +690,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7132115729142165107, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8728968921458609126, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -1
-      objectReference: {fileID: 0}
-    - target: {fileID: 9061743662927067296, guid: 534c5bc77686e184ca2f0d3739f49c26, type: 3}
-      propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
