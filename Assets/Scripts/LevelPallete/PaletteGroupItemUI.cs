@@ -104,6 +104,10 @@ public class PaletteGroupItemUI : MonoBehaviour
 
         if (data.HasExactColorVariant(BlockColor.Green))
             result.Add(BlockColor.Green);
+        if (result.Count == 0 && data.GetPrefab(BlockColor.Blue) != null)
+        {
+            result.Add(BlockColor.Blue);
+        }
 
         return result;
     }

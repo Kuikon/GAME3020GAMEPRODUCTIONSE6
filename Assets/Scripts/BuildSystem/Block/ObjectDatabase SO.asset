@@ -35,3 +35,25 @@ MonoBehaviour:
     redPrefab: {fileID: 0}
     yellowPrefab: {fileID: 5325131912288433340, guid: 3a19fae0c7a536844a5ed518807c392f, type: 3}
     greenPrefab: {fileID: 0}
+  - <Name>k__BackingField: Start
+    <ID>k__BackingField: 2
+    <SizeXYZ>k__BackingField: {x: 6, y: 5, z: 6}
+    <IsBoxShape>k__BackingField: 0
+    <Category>k__BackingField: 4
+    <SpecialType>k__BackingField: 1
+    <Prefab>k__BackingField: {fileID: 8986416493928728895, guid: b8cb46852cf00f64cb1e160e179c4b4b, type: 3}
+    bluePrefab: {fileID: 0}
+    redPrefab: {fileID: 0}
+    yellowPrefab: {fileID: 0}
+    greenPrefab: {fileID: 0}
+  - <Name>k__BackingField: Goal
+    <ID>k__BackingField: 3
+    <SizeXYZ>k__BackingField: {x: 6, y: 7, z: 6}
+    <IsBoxShape>k__BackingField: 0
+    <Category>k__BackingField: 4
+    <SpecialType>k__BackingField: 2
+    <Prefab>k__BackingField: {fileID: 90094258057818800, guid: 107908fd45877174c9d9870fb78dbb17, type: 3}
+    bluePrefab: {fileID: 0}
+    redPrefab: {fileID: 0}
+    yellowPrefab: {fileID: 0}
+    greenPrefab: {fileID: 0}

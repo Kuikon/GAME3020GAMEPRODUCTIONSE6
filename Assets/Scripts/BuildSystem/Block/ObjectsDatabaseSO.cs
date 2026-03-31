@@ -122,4 +122,11 @@ public class ObjectData
                 return false;
         }
     }
+    public bool HasAnyExactColorVariant()
+    {
+        return bluePrefab != null ||
+               redPrefab != null ||
+               yellowPrefab != null ||
+               greenPrefab != null;
+    }
 }
