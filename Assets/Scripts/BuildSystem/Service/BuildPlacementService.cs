@@ -39,7 +39,7 @@ public sealed class BuildPlacementService
                 out Vector3Int hoverCell,
                 out _))
         {
-            HidePreviewAndIdleDrone();
+            HidePreviewOnly();
             return;
         }
 
@@ -184,7 +184,7 @@ public sealed class BuildPlacementService
         Quaternion rotation,
         bool debugLogsOverride)
     {
-        PlaceCommand cmd = new PlaceCommand(context, hoverCell, data, rotation);
+        PlaceCommand cmd = new PlaceCommand(context, hoverCell, data, rotation, state.SelectedColor);
         return context.History.Do(cmd, debugLogsOverride, playEffects: true);
     }
 
@@ -237,7 +237,7 @@ public sealed class BuildPlacementService
                 return false;
             }
 
-            composite.Add(new PlaceCommand(context, lineCells[i], data, rotation));
+            composite.Add(new PlaceCommand(context, lineCells[i], data, rotation,state.SelectedColor));
         }
 
         bool ok = context.History.Do(composite, debugLogsOverride);
@@ -322,7 +322,7 @@ public sealed class BuildPlacementService
 
         return context.Database.TryGetByID(state.SelectedObjectID, out data)
             && data != null
-            && data.Prefab != null;
+           && data.GetPrefab(state.SelectedColor) != null;
     }
 
     private void HidePreviewAndIdleDrone()
@@ -332,7 +332,10 @@ public sealed class BuildPlacementService
         if (context.Drone != null)
             context.Drone.SetIdle();
     }
-
+    private void HidePreviewOnly()
+    {
+        context?.Preview?.Clear();
+    }
     private void Log(string msg, bool enabled)
     {
         if (enabled && !string.IsNullOrEmpty(msg))

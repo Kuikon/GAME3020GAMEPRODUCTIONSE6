@@ -45,7 +45,7 @@ public sealed class BuildController : MonoBehaviour
     public BuildContext Context => context;
     public BuildSpawner Spawner => spawner;
     public BuildPlacementRules Rules => rules;
-
+    public BlockColor SelectedColor { get; private set; } = BlockColor.Blue;
     private void Awake()
     {
         ValidateReferences();
@@ -111,7 +111,11 @@ public sealed class BuildController : MonoBehaviour
         state.SelectedObjectID = objectId;
         app?.RefreshPreview();
     }
-
+    public void SetSelectedColor(BlockColor color)
+    {
+        SelectedColor = color;
+        app?.RefreshPreview();
+    }
     public void SetTool(BuildTool tool)
     {
         if (tool != BuildTool.Move)

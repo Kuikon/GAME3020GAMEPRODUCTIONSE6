@@ -63,7 +63,7 @@ public class LevelSerializer
             if (!rules.CanPlace(r.originCell, obj.SizeXYZ, out _))
                 continue;
 
-            GameObject spawned = spawner.Spawn(grid, r.originCell, obj, rot);
+            GameObject spawned = spawner.Spawn(grid, r.originCell, obj, rot, BlockColor.Blue);
             if (spawned == null)
                 continue;
 

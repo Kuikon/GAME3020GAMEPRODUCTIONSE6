@@ -1,3 +1,4 @@
+using System.Drawing;
 using UnityEngine;
 
 public class BuildSpawner
@@ -9,15 +10,17 @@ public class BuildSpawner
         this.parent = parent;
     }
 
-    public GameObject Spawn(GridManager grid, Vector3Int originCell, ObjectData data, Quaternion rotation)
+    public GameObject Spawn(GridManager grid, Vector3Int originCell, ObjectData data, Quaternion rotation, BlockColor color)
     {
-        if (grid == null || data == null || data.Prefab == null)
+        if (grid == null || data == null)
             return null;
-
+        GameObject prefab = data.GetPrefab(color);
+        if (prefab == null)
+            return null;
         Vector3Int rotatedSize = GetRotatedSize(data.SizeXYZ, rotation);
         Vector3 desiredCenter = grid.BoxToWorldCenter(originCell, rotatedSize);
 
-        GameObject obj = Object.Instantiate(data.Prefab, desiredCenter, rotation, parent);
+        GameObject obj = Object.Instantiate(prefab, desiredCenter, rotation, parent);
         obj.name = $"{data.Name}_ID{data.ID}_{originCell.x}_{originCell.y}_{originCell.z}";
 
         ForceBlockLayerOnAllChildren(obj);
@@ -25,7 +28,7 @@ public class BuildSpawner
         var bi = obj.GetComponent<BlockInstance>();
         if (bi == null) bi = obj.AddComponent<BlockInstance>();
 
-        bi.Setup(data.ID, originCell, rotatedSize, rotation);
+        bi.Setup(data.ID, originCell, rotatedSize, rotation, color);
 
         return obj;
     }

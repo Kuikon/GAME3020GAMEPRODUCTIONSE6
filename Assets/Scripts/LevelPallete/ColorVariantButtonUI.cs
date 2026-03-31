@@ -1,41 +1,42 @@
-﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class PaletteItemButtonUI : MonoBehaviour
+public class ColorVariantButtonUI : MonoBehaviour
 {
+    [Header("Refs")]
     [SerializeField] private Button button;
     [SerializeField] private RawImage thumbnailImage;
-    [SerializeField] private TMP_Text nameText;
     [SerializeField] private GameObject selectedFrame;
 
-    public int ObjectID { get; private set; }
-    public BlockColor Color { get; private set; }   
+    public int ObjectID { get; private set; } = -1;
+    public BlockColor Color { get; private set; }
 
     private BuildPaletteUI owner;
 
-    public void Setup(ObjectData data, Texture thumbnail, BuildPaletteUI paletteUI, bool selected)
+    public void Setup(
+        int objectID,
+        BlockColor color,
+        Texture thumbnail,
+        BuildPaletteUI paletteUI,
+        bool selected)
     {
+        ObjectID = objectID;
+        Color = color;
         owner = paletteUI;
-        ObjectID = data.ID;
-        Color = BlockColor.Blue;
 
         if (thumbnailImage != null)
         {
             if (thumbnail != null)
             {
                 thumbnailImage.texture = thumbnail;
-                thumbnailImage.color = UnityEngine.Color.white;
+
             }
             else
             {
                 thumbnailImage.texture = null;
-                thumbnailImage.color = new UnityEngine.Color(1f, 1f, 1f, 0f);
+                thumbnailImage.color = new Color(1f, 1f, 1f, 0f);
             }
         }
-
-        if (nameText != null)
-            nameText.text = data.Name;
 
         if (button != null)
         {
@@ -54,6 +55,7 @@ public class PaletteItemButtonUI : MonoBehaviour
 
     private void OnClick()
     {
-        owner?.SelectItem(ObjectID, Color); // ←修正
+        Debug.Log("CLICKED!");
+        owner?.SelectItem(ObjectID, Color);
     }
 }

@@ -31,7 +31,10 @@ public class RobotControllerCommander : MonoBehaviour
     public float fallGravityMultiplier = 2.0f;
     public float lowJumpGravityMultiplier = 2.5f;
 
-
+    [Header("Death")]
+    public LayerMask deathLayer;
+    public string deathTriggerName = "Die";
+    private bool isDead;
 
     [Header("Animation")]
     public Animator animator;
@@ -85,6 +88,8 @@ public class RobotControllerCommander : MonoBehaviour
 
     private void Update()
     {
+        if (isDead)
+            return;
         ctx.MoveInput = ctx.MoveAction.ReadValue<Vector2>();
 
         if (ctx.RunAction != null)
@@ -95,6 +100,8 @@ public class RobotControllerCommander : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (isDead)
+            return;
         ctx.Dt = Time.fixedDeltaTime;
 
         judge.Tick(ctx);
@@ -104,13 +111,50 @@ public class RobotControllerCommander : MonoBehaviour
     }
     private void OnJumpPerformed(InputAction.CallbackContext _)
     {
+        if (isDead)
+            return;
         ctx.JumpPressed = true;
         ctx.JumpHeld = true;
     }
     private void OnJumpCanceled(InputAction.CallbackContext _)
     {
+        if (isDead)
+            return;
         ctx.JumpHeld = false;
         ctx.JumpReleased = true;
+    }
+    private void OnTriggerEnter(Collider other)
+    {
+        if (isDead)
+            return;
+
+        if (other.gameObject.CompareTag("Death"))
+        {
+            Die();
+        }
+    }
+    private void Die()
+    {
+        if (isDead)
+            return;
+
+        isDead = true;
+
+        ctx.MoveInput = Vector2.zero;
+        ctx.RunHeld = false;
+        ctx.JumpHeld = false;
+        ctx.JumpPressed = false;
+        ctx.JumpReleased = false;
+
+        SetInputEnabled(false);
+        StopImmediately();
+
+        if (animator != null)
+            animator.SetTrigger(deathTriggerName);
+    }
+    private bool IsInLayerMask(int layer, LayerMask mask)
+    {
+        return (mask.value & (1 << layer)) != 0;
     }
     // ===== Public API =====
     public void SetConveyorVelocity(Vector3 velocity)

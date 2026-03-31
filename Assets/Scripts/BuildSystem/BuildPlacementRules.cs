@@ -27,13 +27,13 @@ public class BuildPlacementRules
         }
 
         // Start / Goal ‚Í1ŒÂ‚¾‚¯‚É‚µ‚½‚¢‚Ì‚Å Line Tool •s‰Â
-        if (data.Category == ObjectCategory.Start)
+        if (data.SpecialType == SpecialBlockType.Start)
         {
             reason = "START_LINE_NOT_ALLOWED";
             return false;
         }
 
-        if (data.Category == ObjectCategory.Goal)
+        if (data.SpecialType == SpecialBlockType.Goal)
         {
             reason = "GOAL_LINE_NOT_ALLOWED";
             return false;
@@ -120,7 +120,7 @@ public class BuildPlacementRules
             return false;
         }
 
-        if (!CanPlaceUniqueCategory(data, database, null, out reason))
+        if (!CanPlaceUniqueSpecialType(data, database, null, out reason))
             return false;
 
         return CanPlace(originCell, sizeXYZ, out reason);
@@ -142,16 +142,16 @@ public class BuildPlacementRules
             return false;
         }
 
-        if (!CanPlaceUniqueCategory(data, database, ignore, out reason))
+        if (!CanPlaceUniqueSpecialType(data, database, ignore, out reason))
             return false;
 
         return CanPlaceIgnoring(ignore, originCell, sizeXYZ, out reason);
     }
 
     // -------------------------
-    // Unique category judgment
+    // Unique special-type judgment
     // -------------------------
-    public bool CanPlaceUniqueCategory(
+    public bool CanPlaceUniqueSpecialType(
         ObjectData data,
         ObjectsDatabaseSO database,
         BlockInstance ignore,
@@ -166,9 +166,9 @@ public class BuildPlacementRules
         }
 
         // Start ‚Í1ŒÂ‚¾‚¯
-        if (data.Category == ObjectCategory.Start)
+        if (data.SpecialType == SpecialBlockType.Start)
         {
-            if (HasCategoryPlaced(database, ObjectCategory.Start, ignore))
+            if (HasSpecialPlaced(database, SpecialBlockType.Start, ignore))
             {
                 reason = "START_ALREADY_EXISTS";
                 return false;
@@ -176,9 +176,9 @@ public class BuildPlacementRules
         }
 
         // Goal ‚Í1ŒÂ‚¾‚¯
-        if (data.Category == ObjectCategory.Goal)
+        if (data.SpecialType == SpecialBlockType.Goal)
         {
-            if (HasCategoryPlaced(database, ObjectCategory.Goal, ignore))
+            if (HasSpecialPlaced(database, SpecialBlockType.Goal, ignore))
             {
                 reason = "GOAL_ALREADY_EXISTS";
                 return false;
@@ -188,20 +188,23 @@ public class BuildPlacementRules
         return true;
     }
 
-    public bool HasCategoryPlaced(
+    public bool HasSpecialPlaced(
         ObjectsDatabaseSO database,
-        ObjectCategory category,
+        SpecialBlockType specialType,
         BlockInstance ignore = null)
     {
         foreach (var obj in EnumerateUniqueOccupiedObjects())
         {
-            if (obj == null) continue;
-            if (obj == ignore) continue;
-
-            if (!TryGetObjectCategory(obj, database, out var placedCategory))
+            if (obj == null)
                 continue;
 
-            if (placedCategory == category)
+            if (obj == ignore)
+                continue;
+
+            if (!TryGetObjectSpecialType(obj, database, out var placedSpecialType))
+                continue;
+
+            if (placedSpecialType == specialType)
                 return true;
         }
 
@@ -218,19 +221,20 @@ public class BuildPlacementRules
         foreach (var pair in occupied)
         {
             var obj = pair.Value;
-            if (obj == null) continue;
+            if (obj == null)
+                continue;
 
             if (unique.Add(obj))
                 yield return obj;
         }
     }
 
-    private bool TryGetObjectCategory(
+    private bool TryGetObjectSpecialType(
         BlockInstance obj,
         ObjectsDatabaseSO database,
-        out ObjectCategory category)
+        out SpecialBlockType specialType)
     {
-        category = ObjectCategory.None;
+        specialType = SpecialBlockType.None;
 
         if (obj == null || database == null)
             return false;
@@ -238,7 +242,7 @@ public class BuildPlacementRules
         if (!database.TryGetByID(obj.ObjectID, out ObjectData data) || data == null)
             return false;
 
-        category = data.Category;
+        specialType = data.SpecialType;
         return true;
     }
 
@@ -248,7 +252,8 @@ public class BuildPlacementRules
 
     public void RegisterObjectCells(Vector3Int originCell, Vector3Int sizeXYZ, BlockInstance obj)
     {
-        if (grid == null) return;
+        if (grid == null)
+            return;
 
         foreach (var c in grid.GetCellsInBox(originCell, sizeXYZ))
             occupied[c] = obj;
@@ -261,7 +266,8 @@ public class BuildPlacementRules
 
     public void RemoveObjectCells(Vector3Int originCell, Vector3Int sizeXYZ)
     {
-        if (grid == null) return;
+        if (grid == null)
+            return;
 
         foreach (var c in grid.GetCellsInBox(originCell, sizeXYZ))
             occupied.Remove(c);

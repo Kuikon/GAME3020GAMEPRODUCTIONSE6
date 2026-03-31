@@ -6,6 +6,9 @@ public sealed class BuildState
     public BuildTool PlaceTool = BuildTool.Single;
     public int SelectedObjectID = 0;
 
+    // í«â¡ÅFåªç›ëIëíÜÇÃêF
+    public BlockColor SelectedColor = BlockColor.Blue;
+
     public bool HasLineStart { get; private set; }
     public Vector3Int LineStartCell { get; private set; }
 
@@ -13,7 +16,6 @@ public sealed class BuildState
     public BlockInstance MoveTarget { get; private set; }
 
     [SerializeField] private int rotationStep = 0;
-
 
     public Quaternion CurrentRotation
     {
@@ -28,6 +30,16 @@ public sealed class BuildState
     public void RotateCCW()
     {
         rotationStep = (rotationStep + 3) % 4;
+    }
+
+    public void SetSelectedObject(int objectID)
+    {
+        SelectedObjectID = objectID;
+    }
+
+    public void SetSelectedColor(BlockColor color)
+    {
+        SelectedColor = color;
     }
 
     public void BeginLine(Vector3Int startCell)
@@ -52,5 +64,10 @@ public sealed class BuildState
     {
         HasMoveTarget = false;
         MoveTarget = null;
+    }
+
+    public void ResetRotation()
+    {
+        rotationStep = 0;
     }
 }

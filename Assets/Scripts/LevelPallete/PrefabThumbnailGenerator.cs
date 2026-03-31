@@ -24,26 +24,32 @@ public class PrefabThumbnailGenerator : MonoBehaviour
 
     private readonly Dictionary<int, Texture2D> cache = new Dictionary<int, Texture2D>();
 
-    public Texture2D GetThumbnail(ObjectData data)
+    public Texture2D GetThumbnail(ObjectData data, BlockColor color)
     {
-        if (data == null || data.Prefab == null)
+        if (data == null)
             return null;
 
-        if (cache.TryGetValue(data.ID, out var cached) && cached != null)
+        GameObject prefab = data.GetPrefab(color);
+        if (prefab == null)
+            return null;
+
+        int cacheKey = data.ID * 100 + (int)color;
+
+        if (cache.TryGetValue(cacheKey, out var cached) && cached != null)
             return cached;
 
-        Texture2D tex = CaptureThumbnail(data.Prefab);
-        cache[data.ID] = tex;
+        Texture2D tex = CaptureThumbnail(prefab);
+        cache[cacheKey] = tex;
         return tex;
     }
 
     public void Warmup(ObjectsDatabaseSO database)
     {
         if (database == null) return;
-
-        for (int i = 0; i < database.objectsData.Count; i++)
+        IReadOnlyList<ObjectData> list = database.ObjectsData;
+        for (int i = 0; i < list.Count; i++)
         {
-            ObjectData data = database.objectsData[i];
+            ObjectData data = list[i];
             if (data == null || data.Prefab == null) continue;
 
             if (!cache.ContainsKey(data.ID))

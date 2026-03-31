@@ -13,9 +13,9 @@ public class BuildPaletteUI : MonoBehaviour
     [SerializeField] private Transform categoryButtonRoot;
     [SerializeField] private CategoryButtonUI categoryButtonPrefab;
 
-    [Header("Item Grid UI")]
-    [SerializeField] private Transform itemButtonRoot;
-    [SerializeField] private PaletteItemButtonUI itemButtonPrefab;
+    [Header("Item List UI")]
+    [SerializeField] private Transform itemRoot;
+    [SerializeField] private PaletteGroupItemUI groupItemPrefab;
 
     [Header("Texts")]
     [SerializeField] private TMP_Text currentCategoryText;
@@ -23,13 +23,14 @@ public class BuildPaletteUI : MonoBehaviour
 
     [Header("Initial")]
     [SerializeField] private ObjectCategory initialCategory = ObjectCategory.Ground;
-    [SerializeField] private bool warmupThumbnailsOnStart = true;
 
     public ObjectCategory CurrentCategory { get; private set; }
-    public int SelectedObjectID { get; private set; } = -1;
 
-    private readonly List<CategoryButtonUI> categoryButtons = new List<CategoryButtonUI>();
-    private readonly List<PaletteItemButtonUI> itemButtons = new List<PaletteItemButtonUI>();
+    public int SelectedObjectID { get; private set; } = -1;
+    public BlockColor SelectedColor { get; private set; } = BlockColor.Blue;
+
+    private readonly List<CategoryButtonUI> categoryButtons = new();
+    private readonly List<PaletteGroupItemUI> groupItems = new();
 
     private void Awake()
     {
@@ -42,33 +43,22 @@ public class BuildPaletteUI : MonoBehaviour
 
     private void Start()
     {
-        if (warmupThumbnailsOnStart && thumbnailGenerator != null && database != null)
-            thumbnailGenerator.Warmup(database);
-
         BuildCategoryButtons();
         SelectCategory(initialCategory);
     }
 
+    // =========================
+    // Category
+    // =========================
     public void SelectCategory(ObjectCategory category)
     {
         CurrentCategory = category;
 
         RefreshCategoryVisual();
-        RebuildItemGrid();
+        RebuildItemList();
 
         if (currentCategoryText != null)
             currentCategoryText.text = $" {CurrentCategory}";
-    }
-
-    public void SelectItem(int objectID)
-    {
-        SelectedObjectID = objectID;
-
-        if (buildController != null)
-            buildController.SetSelectedObject(objectID);
-
-        RefreshItemVisual();
-        RefreshSelectedItemText();
     }
 
     private void BuildCategoryButtons()
@@ -78,86 +68,113 @@ public class BuildPaletteUI : MonoBehaviour
 
         ObjectCategory[] values = (ObjectCategory[])System.Enum.GetValues(typeof(ObjectCategory));
 
-        for (int i = 0; i < values.Length; i++)
+        foreach (var cat in values)
         {
-            ObjectCategory cat = values[i];
             if (cat == ObjectCategory.None) continue;
 
-            CategoryButtonUI btn = Instantiate(categoryButtonPrefab, categoryButtonRoot);
+            var btn = Instantiate(categoryButtonPrefab, categoryButtonRoot);
             btn.Setup(cat, this, cat == initialCategory);
             categoryButtons.Add(btn);
         }
     }
 
-    private void RebuildItemGrid()
+    private void RefreshCategoryVisual()
     {
-        ClearChildren(itemButtonRoot);
-        itemButtons.Clear();
+        foreach (var btn in categoryButtons)
+        {
+            if (btn == null) continue;
+            btn.SetSelected(btn.Category == CurrentCategory);
+        }
+    }
+
+    // =========================
+    // Item List
+    // =========================
+    private void RebuildItemList()
+    {
+        ClearChildren(itemRoot);
+        groupItems.Clear();
 
         if (database == null) return;
 
-        List<ObjectData> list = database.GetByCategory(CurrentCategory);
+        var list = database.GetByCategory(CurrentCategory);
 
-        for (int i = 0; i < list.Count; i++)
+        foreach (var data in list)
         {
-            ObjectData data = list[i];
             if (data == null) continue;
 
-            bool isSelected = data.ID == SelectedObjectID;
-            Texture thumbnail = thumbnailGenerator != null ? thumbnailGenerator.GetThumbnail(data) : null;
-
-            PaletteItemButtonUI btn = Instantiate(itemButtonPrefab, itemButtonRoot);
-            btn.Setup(data, thumbnail, this, isSelected);
-            itemButtons.Add(btn);
+            var item = Instantiate(groupItemPrefab, itemRoot);
+            item.Setup(data, this, thumbnailGenerator, SelectedObjectID, SelectedColor);
+            groupItems.Add(item);
         }
 
-        bool hasCurrent = false;
-        for (int i = 0; i < list.Count; i++)
+        // ‰Šú‘I‘ð
+        if (list.Count > 0 && SelectedObjectID == -1)
         {
-            if (list[i] != null && list[i].ID == SelectedObjectID)
+            var first = list[0];
+            if (first != null)
             {
-                hasCurrent = true;
-                break;
+                SelectedObjectID = first.ID;
+                SelectedColor = GetFirstAvailableColor(first);
             }
         }
 
-        if (!hasCurrent)
-        {
-            if (list.Count > 0 && list[0] != null)
-                SelectItem(list[0].ID);
-            else
-                SelectedObjectID = -1;
-        }
-
-        RefreshSelectedItemText();
+        RefreshSelectedVisual();
+        RefreshSelectedText();
     }
 
-    private void RefreshCategoryVisual()
+    // =========================
+    // Selection
+    // =========================
+    public void SelectItem(int objectID, BlockColor color)
     {
-        for (int i = 0; i < categoryButtons.Count; i++)
+        SelectedObjectID = objectID;
+        SelectedColor = color;
+
+        if (buildController != null)
         {
-            if (categoryButtons[i] == null) continue;
-            categoryButtons[i].SetSelected(categoryButtons[i].Category == CurrentCategory);
+            buildController.SetSelectedObject(objectID);
+            buildController.SetSelectedColor(color); // ©’Ç‰Á•K—v
         }
+
+        RefreshSelectedVisual();
+        RefreshSelectedText();
     }
 
-    private void RefreshItemVisual()
+    private void RefreshSelectedVisual()
     {
-        for (int i = 0; i < itemButtons.Count; i++)
+        foreach (var item in groupItems)
         {
-            if (itemButtons[i] == null) continue;
-            itemButtons[i].SetSelected(itemButtons[i].ObjectID == SelectedObjectID);
+            if (item == null) continue;
+            item.RefreshSelected(SelectedObjectID, SelectedColor);
         }
     }
 
-    private void RefreshSelectedItemText()
+    private void RefreshSelectedText()
     {
         if (selectedItemText == null) return;
 
         if (database != null && database.TryGetByID(SelectedObjectID, out var data) && data != null)
-            selectedItemText.text = $" {data.Name}";
+        {
+            selectedItemText.text = $" {data.Name} ({SelectedColor})";
+        }
         else
+        {
             selectedItemText.text = "Selected: None";
+        }
+    }
+
+    // =========================
+    // Utils
+    // =========================
+    private BlockColor GetFirstAvailableColor(ObjectData data)
+    {
+        if (data.HasColorVariant(BlockColor.Blue)) return BlockColor.Blue;
+        if (data.HasColorVariant(BlockColor.Red)) return BlockColor.Red;
+        if (data.HasColorVariant(BlockColor.Yellow)) return BlockColor.Yellow;
+        if (data.HasColorVariant(BlockColor.Green)) return BlockColor.Green;
+
+        return BlockColor.Blue;
     }
 
     private void ClearChildren(Transform root)

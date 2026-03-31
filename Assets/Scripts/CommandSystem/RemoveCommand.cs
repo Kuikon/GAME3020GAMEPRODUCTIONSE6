@@ -9,6 +9,7 @@ public sealed class RemoveCommand : IBuildCommand
     private Vector3Int removedSize;
     private Quaternion removedRotation;
     private ObjectData removedData;
+    private BlockColor removedColor;
 
     private BlockInstance removedBlock;
     private GameObject removedObject;
@@ -20,6 +21,7 @@ public sealed class RemoveCommand : IBuildCommand
     public Vector3Int RemovedSize => removedSize;
     public Quaternion RemovedRotation => removedRotation;
     public ObjectData RemovedData => removedData;
+    public BlockColor RemovedColor => removedColor;
     public GameObject RemovedObject => removedObject;
     public BlockInstance CurrentBlock => removedBlock;
 
@@ -45,8 +47,9 @@ public sealed class RemoveCommand : IBuildCommand
         removedOriginCell = removedBlock.OriginCell;
         removedSize = removedBlock.SizeXYZ;
         removedRotation = removedBlock.Rotation;
+        removedColor = removedBlock.Color;
 
-        if (!context.Database.TryGetByID(removedBlock.ObjectID, out removedData))
+        if (!context.Database.TryGetByID(removedBlock.ObjectID, out removedData) || removedData == null)
         {
             if (debugLogs)
                 Debug.Log("[RemoveCommand] Failed to get ObjectData by ID.");
@@ -69,7 +72,7 @@ public sealed class RemoveCommand : IBuildCommand
         }
 
         if (debugLogs)
-            Debug.Log($"[RemoveCommand] Removed {removedData.Name} @ {removedOriginCell}");
+            Debug.Log($"[RemoveCommand] Removed {removedData.Name} ({removedColor}) @ {removedOriginCell}");
 
         return true;
     }
@@ -79,7 +82,13 @@ public sealed class RemoveCommand : IBuildCommand
         if (context == null || removedData == null)
             return;
 
-        GameObject respawned = context.Spawner.Spawn(context.Grid, removedOriginCell, removedData, removedRotation);
+        GameObject respawned = context.Spawner.Spawn(
+            context.Grid,
+            removedOriginCell,
+            removedData,
+            removedRotation,
+            removedColor);
+
         if (respawned == null)
         {
             if (debugLogs)
@@ -91,7 +100,13 @@ public sealed class RemoveCommand : IBuildCommand
         if (block == null)
             block = respawned.AddComponent<BlockInstance>();
 
-        block.Initialize(removedData.ID, removedOriginCell, removedSize, removedRotation);
+        block.Initialize(
+            removedData.ID,
+            removedOriginCell,
+            removedSize,
+            removedRotation,
+            removedColor);
+
         context.Rules.RegisterObjectCells(removedOriginCell, removedSize, block);
 
         removedObject = respawned;
@@ -101,6 +116,6 @@ public sealed class RemoveCommand : IBuildCommand
             context.Drone?.PlayBuild(removedObject);
 
         if (debugLogs)
-            Debug.Log($"[RemoveCommand] Undo success @ {removedOriginCell}");
+            Debug.Log($"[RemoveCommand] Undo success @ {removedOriginCell} color={removedColor}");
     }
 }

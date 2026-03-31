@@ -398,7 +398,7 @@ Transform:
   m_GameObject: {fileID: 2798480643934591289}
   serializedVersion: 2
   m_LocalRotation: {x: 0.000000021855694, y: 0, z: -0, w: 1}
-  m_LocalPosition: {x: -0, y: 0, z: 0}
+  m_LocalPosition: {x: -2.33, y: 0.58, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -654,7 +654,7 @@ Transform:
   m_GameObject: {fileID: 3511700754798141334}
   serializedVersion: 2
   m_LocalRotation: {x: 0.000000021855694, y: 0, z: -0, w: 1}
-  m_LocalPosition: {x: -0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.89, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1262,16 +1262,16 @@ MonoBehaviour:
   groundPoint: {fileID: 5452256837826634920}
   groundCheckRadius: 0.2
   moveSpeed: 4
-  runSpeed: 8
-  rotateSpeed: 12
+  runSpeed: 10
+  rotateSpeed: 7
   groundAccel: 35
   airAccel: 12
   jumpHeight: 1.8
-  jumpBufferTime: 0.12
-  coyoteTime: 0.12
-  jumpCutMultiplier: 0.5
+  jumpBufferTime: 0.1
+  coyoteTime: 0.1
+  jumpCutMultiplier: 1
   fallGravityMultiplier: 2
-  lowJumpGravityMultiplier: 2.5
+  lowJumpGravityMultiplier: 5
   animator: {fileID: 567601982258029136}
   conveyorStickTime: 0.1
 --- !u!1 &7243993092378295735

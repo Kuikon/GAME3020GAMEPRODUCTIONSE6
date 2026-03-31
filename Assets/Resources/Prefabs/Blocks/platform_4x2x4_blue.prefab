@@ -64,7 +64,7 @@ GameObject:
   - component: {fileID: 2867027502292418254}
   - component: {fileID: 7823580462155352853}
   m_Layer: 8
-  m_Name: platform_4x4x2_blue
+  m_Name: platform_4x2x4_blue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
