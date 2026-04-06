@@ -41,6 +41,13 @@ public class EditModeCameraFollow : MonoBehaviour
     [SerializeField] private bool lockCursorWhileLooking = true;
     [SerializeField] private bool hideCursorWhileLooking = true;
 
+    [Header("Layer Control")]
+    [SerializeField] private string boyLayerName = "Boy";
+
+    private int boyLayer;
+    private int originalCullingMask;
+    private Camera cam;
+
     private InputActionMap map;
     private InputAction lookAction;
     private InputAction lookHoldAction;
@@ -70,6 +77,11 @@ public class EditModeCameraFollow : MonoBehaviour
         Vector3 euler = transform.eulerAngles;
         yaw = euler.y;
         pitch = NormalizePitch(euler.x);
+        cam = GetComponent<Camera>();
+        if (cam != null)
+            originalCullingMask = cam.cullingMask;
+
+        boyLayer = LayerMask.NameToLayer(boyLayerName);
     }
 
     private void OnEnable()
@@ -102,6 +114,12 @@ public class EditModeCameraFollow : MonoBehaviour
         Vector3 euler = transform.eulerAngles;
         yaw = euler.y;
         pitch = NormalizePitch(euler.x);
+
+        // 👇 HIDE BOY
+        if (cam != null && boyLayer >= 0)
+        {
+            cam.cullingMask &= ~(1 << boyLayer);
+        }
     }
 
     public void SetFixedMode()
@@ -109,6 +127,12 @@ public class EditModeCameraFollow : MonoBehaviour
         currentMode = CameraMode.Fixed;
         CacheFixedPose();
         RestoreCursor();
+
+        // 👇 SHOW BOY AGAIN
+        if (cam != null)
+        {
+            cam.cullingMask = originalCullingMask;
+        }
     }
 
     public void SetCameraMode(CameraMode mode)
