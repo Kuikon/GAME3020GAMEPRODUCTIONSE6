@@ -30,7 +30,7 @@ MonoBehaviour:
     <IsBoxShape>k__BackingField: 1
     <Category>k__BackingField: 1
     <SpecialType>k__BackingField: 0
-    <Prefab>k__BackingField: {fileID: 0}
+    <Prefab>k__BackingField: {fileID: 5325131912288433340, guid: 3a19fae0c7a536844a5ed518807c392f, type: 3}
     bluePrefab: {fileID: 0}
     redPrefab: {fileID: 0}
     yellowPrefab: {fileID: 5325131912288433340, guid: 3a19fae0c7a536844a5ed518807c392f, type: 3}

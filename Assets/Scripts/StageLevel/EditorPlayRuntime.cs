@@ -12,8 +12,8 @@ public class EditorPlayRuntime : MonoBehaviour
 
     [Header("Thumbnail Camera")]
     [SerializeField] private Camera thumbnailCamera;
-    [SerializeField] private int thumbnailWidth = 256;
-    [SerializeField] private int thumbnailHeight = 144;
+    [SerializeField] private int thumbnailWidth = 1024;
+    [SerializeField] private int thumbnailHeight = 576;
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
@@ -48,33 +48,10 @@ public class EditorPlayRuntime : MonoBehaviour
             Debug.LogWarning("[EditorPlayRuntime] CurrentLevelId is empty. Creating temp level.");
             var meta = db.CreateNew("Auto Level");
             GameManager.I.CurrentLevelId = meta.levelId;
-            GameManager.I.StartMode = StartMode.Edit;
         }
 
         LoadCurrentLevel();
-
-        Debug.Log($"[EditorPlayRuntime] StartMode = {GameManager.I.StartMode}");
-
-        if (GameManager.I.StartMode == StartMode.Play)
-        {
-            bool ok = runtimeCoordinator != null && runtimeCoordinator.TryEnterPlay();
-
-            if (!ok)
-            {
-                Debug.LogWarning("[EditorPlayRuntime] Start/Goal が足りないため Edit モードで開始します。");
-                if (runtimeCoordinator != null)
-                    runtimeCoordinator.ReturnToEditFromPlay();
-                else
-                    modeManager?.ForceModeEdit();
-            }
-        }
-        else
-        {
-            if (runtimeCoordinator != null)
-                runtimeCoordinator.ReturnToEditFromPlay();
-            else
-                modeManager?.ForceModeEdit();
-        }
+        modeManager?.ForceModeEdit();
     }
 
     private void EnsureGameManager()
@@ -171,5 +148,6 @@ public class EditorPlayRuntime : MonoBehaviour
 
         if (debugLogs)
             Debug.Log($"[EditorPlayRuntime] Thumbnail saved: {thumbPath}");
+        Debug.Log($"thumb size = {thumbnailWidth} x {thumbnailHeight}");
     }
 }

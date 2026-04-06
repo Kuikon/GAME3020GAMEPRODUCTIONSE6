@@ -18,20 +18,22 @@ public class LevelSerializer
             {
                 objectId = bi.ObjectID,
                 originCell = bi.OriginCell,
-                euler = bi.transform.rotation.eulerAngles
+                euler = bi.transform.rotation.eulerAngles,
+                color = bi.Color
             });
         }
+
         return data;
     }
 
     // LevelData Å® Scene(placedRoot)
     public void Apply(
-      LevelData data,
-      Transform placedRoot,
-      GridManager grid,
-      ObjectsDatabaseSO db,
-      BuildSpawner spawner,
-      BuildPlacementRules rules)
+        LevelData data,
+        Transform placedRoot,
+        GridManager grid,
+        ObjectsDatabaseSO db,
+        BuildSpawner spawner,
+        BuildPlacementRules rules)
     {
         if (!placedRoot)
         {
@@ -55,15 +57,17 @@ public class LevelSerializer
 
         foreach (var r in data.blocks)
         {
-            if (!db.TryGetByID(r.objectId, out var obj) || obj == null || obj.Prefab == null)
+            if (!db.TryGetByID(r.objectId, out var obj) || obj == null)
                 continue;
 
             Quaternion rot = Quaternion.Euler(r.euler);
 
-            if (!rules.CanPlace(r.originCell, obj.SizeXYZ, out _))
+            Vector3Int rotatedSize = GetRotatedSize(obj.SizeXYZ, rot);
+
+            if (!rules.CanPlace(r.originCell, rotatedSize, out _))
                 continue;
 
-            GameObject spawned = spawner.Spawn(grid, r.originCell, obj, rot, BlockColor.Blue);
+            GameObject spawned = spawner.Spawn(grid, r.originCell, obj, rot, r.color);
             if (spawned == null)
                 continue;
 
@@ -71,8 +75,18 @@ public class LevelSerializer
             if (bi == null)
                 continue;
 
-            rules.RegisterObjectCells(r.originCell, obj.SizeXYZ, bi);
+            rules.RegisterObjectCells(r.originCell, rotatedSize, bi);
         }
     }
 
+    private Vector3Int GetRotatedSize(Vector3Int size, Quaternion rotation)
+    {
+        Vector3 euler = rotation.eulerAngles;
+        int y = Mathf.RoundToInt(euler.y) % 360;
+        if (y < 0) y += 360;
+        if (y == 90 || y == 270)
+            return new Vector3Int(size.z, size.y, size.x);
+
+        return size;
+    }
 }

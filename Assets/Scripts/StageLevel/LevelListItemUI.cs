@@ -13,24 +13,26 @@ public class LevelListItemUI : MonoBehaviour
     [Header("Thumbnail")]
     [SerializeField] private Image thumbnailImage;
 
-    [Header("Main Buttons")]
+    [Header("Select Button")]
     [SerializeField] private Button selectButton;
 
-    [Header("Per Item Buttons")]
-    [SerializeField] private Button duplicateButton;
-    [SerializeField] private Button deleteButton;
-    [SerializeField] private Button renameButton;
-
-    [Header("Rename UI")]
-    [SerializeField] private TMP_InputField renameInput;
+    [Header("Selected Visual")]
+    [SerializeField] private GameObject selectedFrame;
 
     private string levelId;
     private LevelSelectController owner;
 
     public void Setup(LevelMeta meta, LevelSelectController controller, bool isSelected)
     {
-        levelId = meta.levelId;
+        levelId = meta != null ? meta.levelId : "";
         owner = controller;
+
+        if (meta == null)
+        {
+            ClearView();
+            BindButton();
+            return;
+        }
 
         if (nameText != null)
             nameText.text = meta.name;
@@ -41,43 +43,42 @@ public class LevelListItemUI : MonoBehaviour
             updatedText.text = $"Updated: {dt:yyyy-MM-dd HH:mm}";
         }
 
-        if (renameInput != null)
-            renameInput.text = meta.name;
+        if (selectedFrame != null)
+            selectedFrame.SetActive(isSelected);
 
-        BindButtons();
         LoadThumbnail(meta.thumbnailPath);
+        BindButton();
     }
 
-    private void BindButtons()
+    private void BindButton()
     {
-        if (selectButton != null)
-        {
-            selectButton.onClick.RemoveAllListeners();
-            selectButton.onClick.AddListener(UI_Select);
-        }
+        if (selectButton == null) return;
 
-        if (duplicateButton != null)
-        {
-            duplicateButton.onClick.RemoveAllListeners();
-            duplicateButton.onClick.AddListener(UI_Duplicate);
-        }
+        selectButton.onClick.RemoveAllListeners();
+        selectButton.onClick.AddListener(UI_Select);
+    }
 
-        if (deleteButton != null)
-        {
-            deleteButton.onClick.RemoveAllListeners();
-            deleteButton.onClick.AddListener(UI_Delete);
-        }
+    private void ClearView()
+    {
+        if (nameText != null)
+            nameText.text = "No Level";
 
-        if (renameButton != null)
-        {
-            renameButton.onClick.RemoveAllListeners();
-            renameButton.onClick.AddListener(UI_Rename);
-        }
+        if (updatedText != null)
+            updatedText.text = "-";
+
+        if (thumbnailImage != null)
+            thumbnailImage.sprite = null;
+
+        if (selectedFrame != null)
+            selectedFrame.SetActive(false);
     }
 
     private void LoadThumbnail(string path)
     {
         if (thumbnailImage == null) return;
+
+        thumbnailImage.sprite = null;
+
         if (string.IsNullOrEmpty(path)) return;
         if (!File.Exists(path)) return;
 
@@ -94,41 +95,11 @@ public class LevelListItemUI : MonoBehaviour
 
         thumbnailImage.sprite = sprite;
         thumbnailImage.preserveAspect = true;
+        Debug.Log($"LoadThumbnail path={path}");
     }
 
     public void UI_Select()
     {
         owner?.Select(levelId);
-        owner.UI_Edit();
-    }
-
-    public void UI_Duplicate()
-    {
-        if (owner == null) return;
-
-        owner.Select(levelId);
-        owner.UI_Duplicate();
-    }
-
-    public void UI_Delete()
-    {
-        if (owner == null) return;
-
-        owner.Select(levelId);
-        owner.UI_Delete();
-    }
-
-    public void UI_Rename()
-    {
-        if (owner == null) return;
-        if (renameInput == null) return;
-
-        string newName = renameInput.text?.Trim();
-
-        if (string.IsNullOrEmpty(newName))
-            return;
-
-        owner.Select(levelId);
-        owner.UI_Rename(newName);
     }
 }

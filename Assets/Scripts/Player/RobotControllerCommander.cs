@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,6 +17,7 @@ public class RobotControllerCommander : MonoBehaviour
     public float groundCheckDistance = 0.08f;
     public Transform groundPoint;
     public float groundCheckRadius = 0.2f;
+
     [Header("Movement")]
     public float moveSpeed = 5f;
     public float runSpeed = 8f;
@@ -34,6 +36,7 @@ public class RobotControllerCommander : MonoBehaviour
     [Header("Death")]
     public LayerMask deathLayer;
     public string deathTriggerName = "Die";
+    [SerializeField] private float respawnDelay = 1.2f;
     private bool isDead;
 
     [Header("Animation")]
@@ -41,6 +44,9 @@ public class RobotControllerCommander : MonoBehaviour
 
     [Header("Conveyor")]
     public float conveyorStickTime = 0.1f;
+
+    [Header("Respawn")]
+    [SerializeField] private LevelRuntimeCoordinator runtimeCoordinator;
 
     private RobotContext ctx;
 
@@ -53,6 +59,7 @@ public class RobotControllerCommander : MonoBehaviour
     private System.Action<InputAction.CallbackContext> jumpPerformedHandler;
     private System.Action<InputAction.CallbackContext> jumpCanceledHandler;
 
+    private Coroutine respawnRoutine;
 
     private void Awake()
     {
@@ -61,12 +68,15 @@ public class RobotControllerCommander : MonoBehaviour
 
         jumpPerformedHandler = OnJumpPerformed;
         jumpCanceledHandler = OnJumpCanceled;
-    }
 
+        if (runtimeCoordinator == null)
+            runtimeCoordinator = FindFirstObjectByType<LevelRuntimeCoordinator>();
+    }
 
     private void OnEnable()
     {
-        ctx.PlayerMap.Enable();
+        if (ctx.PlayerMap != null)
+            ctx.PlayerMap.Enable();
 
         if (ctx.JumpAction != null)
         {
@@ -83,13 +93,15 @@ public class RobotControllerCommander : MonoBehaviour
             ctx.JumpAction.canceled -= jumpCanceledHandler;
         }
 
-        ctx.PlayerMap.Disable();
+        if (ctx.PlayerMap != null)
+            ctx.PlayerMap.Disable();
     }
 
     private void Update()
     {
         if (isDead)
             return;
+
         ctx.MoveInput = ctx.MoveAction.ReadValue<Vector2>();
 
         if (ctx.RunAction != null)
@@ -102,6 +114,7 @@ public class RobotControllerCommander : MonoBehaviour
     {
         if (isDead)
             return;
+
         ctx.Dt = Time.fixedDeltaTime;
 
         judge.Tick(ctx);
@@ -109,20 +122,25 @@ public class RobotControllerCommander : MonoBehaviour
         xform.Tick(ctx);
         output.Tick(ctx);
     }
+
     private void OnJumpPerformed(InputAction.CallbackContext _)
     {
         if (isDead)
             return;
+
         ctx.JumpPressed = true;
         ctx.JumpHeld = true;
     }
+
     private void OnJumpCanceled(InputAction.CallbackContext _)
     {
         if (isDead)
             return;
+
         ctx.JumpHeld = false;
         ctx.JumpReleased = true;
     }
+
     private void OnTriggerEnter(Collider other)
     {
         if (isDead)
@@ -133,6 +151,7 @@ public class RobotControllerCommander : MonoBehaviour
             Die();
         }
     }
+
     private void Die()
     {
         if (isDead)
@@ -151,11 +170,58 @@ public class RobotControllerCommander : MonoBehaviour
 
         if (animator != null)
             animator.SetTrigger(deathTriggerName);
+
+        if (respawnRoutine != null)
+            StopCoroutine(respawnRoutine);
+
+        respawnRoutine = StartCoroutine(CoRespawn());
     }
+
+    private IEnumerator CoRespawn()
+    {
+        yield return new WaitForSeconds(respawnDelay);
+
+        if (runtimeCoordinator != null)
+        {
+            runtimeCoordinator.MovePlayerToStart();
+        }
+        else
+        {
+            Debug.LogWarning("[RobotControllerCommander] LevelRuntimeCoordinator Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÅB");
+        }
+
+        ResetDeadState();
+
+        respawnRoutine = null;
+    }
+
+    private void ResetDeadState()
+    {
+        isDead = false;
+
+        ctx.MoveInput = Vector2.zero;
+        ctx.RunHeld = false;
+        ctx.JumpHeld = false;
+        ctx.JumpPressed = false;
+        ctx.JumpReleased = false;
+        ctx.ConveyorVelocity = Vector3.zero;
+        ctx.ConveyorTimer = 0f;
+
+        StopImmediately();
+        SetInputEnabled(true);
+
+        if (animator != null)
+        {
+            animator.ResetTrigger(deathTriggerName);
+            animator.Update(0f);
+        }
+    }
+
     private bool IsInLayerMask(int layer, LayerMask mask)
     {
         return (mask.value & (1 << layer)) != 0;
     }
+
     // ===== Public API =====
     public void SetConveyorVelocity(Vector3 velocity)
     {
@@ -165,6 +231,9 @@ public class RobotControllerCommander : MonoBehaviour
 
     public void SetInputEnabled(bool enabled)
     {
+        if (ctx.PlayerMap == null)
+            return;
+
         if (enabled) ctx.PlayerMap.Enable();
         else ctx.PlayerMap.Disable();
     }
@@ -172,5 +241,12 @@ public class RobotControllerCommander : MonoBehaviour
     public void StopImmediately()
     {
         output.StopImmediately(ctx);
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
     }
 }

@@ -29,5 +29,6 @@ public class BlockRecord
 {
     public int objectId;
     public Vector3Int originCell;
-    public Vector3 euler; 
+    public Vector3 euler;
+    public BlockColor color;
 }

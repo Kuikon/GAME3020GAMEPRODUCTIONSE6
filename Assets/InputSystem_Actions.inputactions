@@ -1082,6 +1082,15 @@
                     "initialStateCheck": true
                 },
                 {
+                    "name": "LookHold",
+                    "type": "Button",
+                    "id": "a024bedf-0a7c-4ec0-b8a6-5a7400026e3d",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Up",
                     "type": "Button",
                     "id": "49bed542-b100-4e87-bd73-ebea4ee7223d",
@@ -1330,61 +1339,6 @@
                     "isPartOfComposite": false
                 },
                 {
-                    "name": "2D Vector",
-                    "id": "21dcebba-2194-4407-b28a-d5e859dbed23",
-                    "path": "2DVector",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "LookRoom",
-                    "isComposite": true,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "up",
-                    "id": "8cefbbf0-b1a5-46b4-ac3e-4c9c2b09331f",
-                    "path": "<Keyboard>/i",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "LookRoom",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "down",
-                    "id": "44e290d7-52e6-48d7-9f12-2a25b53692f5",
-                    "path": "<Keyboard>/k",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "LookRoom",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "left",
-                    "id": "94ae5b8d-e1b0-4c95-b718-ab2c944a54fb",
-                    "path": "<Keyboard>/e",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "LookRoom",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "right",
-                    "id": "bf013018-c0dc-44dc-b089-30483fcc9533",
-                    "path": "<Keyboard>/q",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "LookRoom",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
                     "name": "",
                     "id": "e7141ec1-19e5-4dce-9c1a-d1c2d69a255b",
                     "path": "<Keyboard>/c",
@@ -1403,6 +1357,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "RotateLeft",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7362c492-8879-492c-ace8-f722d7f828a4",
+                    "path": "<Mouse>/delta",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LookRoom",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5da58982-72d2-4488-b8f5-80788dcefd51",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LookHold",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
