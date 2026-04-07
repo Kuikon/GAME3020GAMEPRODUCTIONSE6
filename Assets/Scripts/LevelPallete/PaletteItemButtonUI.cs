@@ -54,6 +54,7 @@ public class PaletteItemButtonUI : MonoBehaviour
 
     private void OnClick()
     {
-        owner?.SelectItem(ObjectID, Color); // ←修正
+        Texture icon = thumbnailImage != null ? thumbnailImage.texture : null;
+        owner?.SelectItem(ObjectID, Color, icon);
     }
 }

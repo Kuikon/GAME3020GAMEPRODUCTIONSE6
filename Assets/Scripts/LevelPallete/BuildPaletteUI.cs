@@ -1,3 +1,4 @@
+ï»¿using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -20,6 +21,7 @@ public class BuildPaletteUI : MonoBehaviour
     [Header("Texts")]
     [SerializeField] private TMP_Text currentCategoryText;
     [SerializeField] private TMP_Text selectedItemText;
+    [SerializeField] private CurrentSelectedBlockUI currentSelectedBlockUI;
 
     [Header("Initial")]
     [SerializeField] private ObjectCategory initialCategory = ObjectCategory.Ground;
@@ -31,6 +33,9 @@ public class BuildPaletteUI : MonoBehaviour
 
     private readonly List<CategoryButtonUI> categoryButtons = new();
     private readonly List<PaletteGroupItemUI> groupItems = new();
+    private readonly List<ObjectCategory> categoryOrder = new();
+
+    private int currentCategoryIndex = 0;
 
     private void Awake()
     {
@@ -41,9 +46,22 @@ public class BuildPaletteUI : MonoBehaviour
             thumbnailGenerator = FindFirstObjectByType<PrefabThumbnailGenerator>();
     }
 
+    private void OnEnable()
+    {
+        if (buildController != null)
+            buildController.OnSelectionChanged += HandleSelectionChanged;
+    }
+
+    private void OnDisable()
+    {
+        if (buildController != null)
+            buildController.OnSelectionChanged -= HandleSelectionChanged;
+    }
+
     private void Start()
     {
         BuildCategoryButtons();
+        SetCategoryIndexFromCategory(initialCategory);
         SelectCategory(initialCategory);
     }
 
@@ -53,6 +71,7 @@ public class BuildPaletteUI : MonoBehaviour
     public void SelectCategory(ObjectCategory category)
     {
         CurrentCategory = category;
+        SetCategoryIndexFromCategory(category);
 
         RefreshCategoryVisual();
         RebuildItemList();
@@ -61,20 +80,38 @@ public class BuildPaletteUI : MonoBehaviour
             currentCategoryText.text = $" {CurrentCategory}";
     }
 
+    public void SelectNextCategory(int direction)
+    {
+        if (categoryOrder.Count == 0)
+            return;
+
+        currentCategoryIndex += direction;
+
+        if (currentCategoryIndex < 0)
+            currentCategoryIndex = categoryOrder.Count - 1;
+        else if (currentCategoryIndex >= categoryOrder.Count)
+            currentCategoryIndex = 0;
+
+        SelectCategory(categoryOrder[currentCategoryIndex]);
+    }
+
     private void BuildCategoryButtons()
     {
         ClearChildren(categoryButtonRoot);
         categoryButtons.Clear();
+        categoryOrder.Clear();
 
-        ObjectCategory[] values = (ObjectCategory[])System.Enum.GetValues(typeof(ObjectCategory));
+        ObjectCategory[] values = (ObjectCategory[])Enum.GetValues(typeof(ObjectCategory));
 
         foreach (var cat in values)
         {
-            if (cat == ObjectCategory.None) continue;
+            if (cat == ObjectCategory.None)
+                continue;
 
             var btn = Instantiate(categoryButtonPrefab, categoryButtonRoot);
             btn.Setup(cat, this, cat == initialCategory);
             categoryButtons.Add(btn);
+            categoryOrder.Add(cat);
         }
     }
 
@@ -82,9 +119,18 @@ public class BuildPaletteUI : MonoBehaviour
     {
         foreach (var btn in categoryButtons)
         {
-            if (btn == null) continue;
+            if (btn == null)
+                continue;
+
             btn.SetSelected(btn.Category == CurrentCategory);
         }
+    }
+
+    private void SetCategoryIndexFromCategory(ObjectCategory category)
+    {
+        currentCategoryIndex = categoryOrder.IndexOf(category);
+        if (currentCategoryIndex < 0)
+            currentCategoryIndex = 0;
     }
 
     // =========================
@@ -95,21 +141,49 @@ public class BuildPaletteUI : MonoBehaviour
         ClearChildren(itemRoot);
         groupItems.Clear();
 
-        if (database == null) return;
+        if (database == null)
+        {
+            RefreshCurrentSelectedIcon();
+            return;
+        }
 
         var list = database.GetByCategory(CurrentCategory);
 
         foreach (var data in list)
         {
-            if (data == null) continue;
+            if (data == null)
+                continue;
 
             var item = Instantiate(groupItemPrefab, itemRoot);
             item.Setup(data, this, thumbnailGenerator, SelectedObjectID, SelectedColor);
             groupItems.Add(item);
         }
 
-        // ‰Šú‘I‘ð
-        if (list.Count > 0 && SelectedObjectID == -1)
+        if (list.Count <= 0)
+        {
+            SelectedObjectID = -1;
+            RefreshSelectedVisual();
+            RefreshSelectedText();
+            RefreshCurrentSelectedIcon();
+            return;
+        }
+
+        bool currentSelectionStillExists = false;
+
+        foreach (var data in list)
+        {
+            if (data != null && data.ID == SelectedObjectID)
+            {
+                currentSelectionStillExists = true;
+
+                if (!data.HasColorVariant(SelectedColor))
+                    SelectedColor = GetFirstAvailableColor(data);
+
+                break;
+            }
+        }
+
+        if (!currentSelectionStillExists)
         {
             var first = list[0];
             if (first != null)
@@ -119,49 +193,145 @@ public class BuildPaletteUI : MonoBehaviour
             }
         }
 
+        ApplySelectionToBuildController();
         RefreshSelectedVisual();
         RefreshSelectedText();
+        RefreshCurrentSelectedIcon();
+    }
+
+    public void SelectNextItem(int direction)
+    {
+        if (database == null)
+            return;
+
+        var list = database.GetByCategory(CurrentCategory);
+        if (list == null || list.Count == 0)
+            return;
+
+        int currentIndex = GetCurrentItemIndex(list);
+        if (currentIndex < 0)
+            currentIndex = 0;
+
+        currentIndex += direction;
+
+        if (currentIndex < 0)
+            currentIndex = list.Count - 1;
+        else if (currentIndex >= list.Count)
+            currentIndex = 0;
+
+        var nextData = list[currentIndex];
+        if (nextData == null)
+            return;
+
+        BlockColor nextColor = nextData.HasColorVariant(SelectedColor)
+            ? SelectedColor
+            : GetFirstAvailableColor(nextData);
+
+        Texture thumbnail = thumbnailGenerator != null
+            ? thumbnailGenerator.GetThumbnail(nextData, nextColor)
+            : null;
+
+        SelectItem(nextData.ID, nextColor, thumbnail);
+    }
+
+    private int GetCurrentItemIndex(List<ObjectData> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (list[i] != null && list[i].ID == SelectedObjectID)
+                return i;
+        }
+
+        return -1;
     }
 
     // =========================
     // Selection
     // =========================
-    public void SelectItem(int objectID, BlockColor color)
+    public void SelectItem(int objectID, BlockColor color, Texture icon)
     {
         SelectedObjectID = objectID;
         SelectedColor = color;
 
-        if (buildController != null)
+        ApplySelectionToBuildController();
+        RefreshSelectedVisual();
+        RefreshSelectedText();
+
+        if (currentSelectedBlockUI != null)
         {
-            buildController.SetSelectedObject(objectID);
-            buildController.SetSelectedColor(color); // ©’Ç‰Á•K—v
+            if (icon != null)
+                currentSelectedBlockUI.SetCurrentIcon(icon);
+            else
+                RefreshCurrentSelectedIcon();
         }
+    }
+
+    private void ApplySelectionToBuildController()
+    {
+        if (buildController == null)
+            return;
+
+        buildController.SetSelectedObject(SelectedObjectID);
+        buildController.SetSelectedColor(SelectedColor);
+    }
+
+    private void HandleSelectionChanged(int objectID, BlockColor color)
+    {
+        SelectedObjectID = objectID;
+        SelectedColor = color;
 
         RefreshSelectedVisual();
         RefreshSelectedText();
+        RefreshCurrentSelectedIcon();
     }
 
     private void RefreshSelectedVisual()
     {
         foreach (var item in groupItems)
         {
-            if (item == null) continue;
+            if (item == null)
+                continue;
+
             item.RefreshSelected(SelectedObjectID, SelectedColor);
         }
     }
 
     private void RefreshSelectedText()
     {
-        if (selectedItemText == null) return;
+        if (selectedItemText == null)
+            return;
 
         if (database != null && database.TryGetByID(SelectedObjectID, out var data) && data != null)
-        {
             selectedItemText.text = $" {data.Name} ({SelectedColor})";
-        }
         else
-        {
             selectedItemText.text = "Selected: None";
+    }
+
+    private void RefreshCurrentSelectedIcon()
+    {
+        if (currentSelectedBlockUI == null)
+            return;
+
+        if (database == null)
+        {
+            currentSelectedBlockUI.ClearIcon();
+            return;
         }
+
+        if (!database.TryGetByID(SelectedObjectID, out var data) || data == null)
+        {
+            currentSelectedBlockUI.ClearIcon();
+            return;
+        }
+
+        Texture thumbnail = thumbnailGenerator != null
+            ? thumbnailGenerator.GetThumbnail(data, SelectedColor)
+            : null;
+
+        if (thumbnail != null)
+            currentSelectedBlockUI.SetCurrentIcon(thumbnail);
+        else
+            currentSelectedBlockUI.ClearIcon();
     }
 
     // =========================
@@ -179,7 +349,8 @@ public class BuildPaletteUI : MonoBehaviour
 
     private void ClearChildren(Transform root)
     {
-        if (root == null) return;
+        if (root == null)
+            return;
 
         for (int i = root.childCount - 1; i >= 0; i--)
             Destroy(root.GetChild(i).gameObject);

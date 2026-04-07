@@ -17,7 +17,8 @@ public class EditModeCameraFollow : MonoBehaviour
 
     [Header("Target")]
     [SerializeField] private Transform target;
-
+    [Header("Ground Center Target")]
+    [SerializeField] private Transform groundCenterTarget;
     [Header("Mode")]
     [SerializeField] private CameraMode currentMode = CameraMode.Fixed;
 
@@ -111,11 +112,30 @@ public class EditModeCameraFollow : MonoBehaviour
         currentMode = CameraMode.Near;
         hasCachedFixedPose = false;
 
-        Vector3 euler = transform.eulerAngles;
-        yaw = euler.y;
-        pitch = NormalizePitch(euler.x);
+        if (target != null && groundCenterTarget != null)
+        {
+            // first guess near position
+            Vector3 desiredNearPos = target.position + nearOffset;
 
-        // 👇 HIDE BOY
+            Vector3 dir = groundCenterTarget.position - desiredNearPos;
+
+            if (dir.sqrMagnitude > 0.0001f)
+            {
+                Quaternion lookRot = Quaternion.LookRotation(dir.normalized, Vector3.up);
+                Vector3 euler = lookRot.eulerAngles;
+
+                yaw = euler.y;
+                pitch = NormalizePitch(euler.x);
+                pitch = Mathf.Clamp(pitch, pitchMin, pitchMax);
+            }
+        }
+        else
+        {
+            Vector3 euler = transform.eulerAngles;
+            yaw = euler.y;
+            pitch = NormalizePitch(euler.x);
+        }
+
         if (cam != null && boyLayer >= 0)
         {
             cam.cullingMask &= ~(1 << boyLayer);

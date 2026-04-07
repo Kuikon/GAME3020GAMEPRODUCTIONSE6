@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public sealed class BuildController : MonoBehaviour
@@ -15,6 +18,7 @@ public sealed class BuildController : MonoBehaviour
     [SerializeField] private LayerMask blockOnlyMask;
     [SerializeField] private float rayDistance = 200f;
     [SerializeField] private Camera buildCamera;
+
     [Header("State")]
     [SerializeField] private BuildState state = new BuildState();
 
@@ -27,6 +31,12 @@ public sealed class BuildController : MonoBehaviour
     [SerializeField] private InputActionReference rotateCWAction;
     [SerializeField] private InputActionReference rotateCCWAction;
     [SerializeField] private InputActionReference toggleToolAction;
+
+    [Header("Color Input")]
+    [SerializeField] private InputActionReference color1Action;
+    [SerializeField] private InputActionReference color2Action;
+    [SerializeField] private InputActionReference color3Action;
+    [SerializeField] private InputActionReference color4Action;
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = false;
@@ -45,7 +55,12 @@ public sealed class BuildController : MonoBehaviour
     public BuildContext Context => context;
     public BuildSpawner Spawner => spawner;
     public BuildPlacementRules Rules => rules;
+
     public BlockColor SelectedColor { get; private set; } = BlockColor.Blue;
+    public bool IsBuildEnabled { get; set; } = true;
+
+    public event Action<int, BlockColor> OnSelectionChanged;
+
     private void Awake()
     {
         ValidateReferences();
@@ -53,7 +68,7 @@ public sealed class BuildController : MonoBehaviour
         history = new CommandHistory();
 
         raycaster = new BuildRaycaster(buildCamera, rayDistance, placeMask, blockOnlyMask);
-        solver = new BuildPlacementSolver(grid,0);
+        solver = new BuildPlacementSolver(grid, 0);
         spawner = new BuildSpawner(placedBlocksRoot);
         rules = new BuildPlacementRules(grid);
         preview = new BuildPreview(grid, previewMaterial);
@@ -72,6 +87,8 @@ public sealed class BuildController : MonoBehaviour
             droneService);
 
         app = new BuildApplicationService(context, state, debugLogs);
+
+        SelectedColor = state.SelectedColor;
     }
 
     private void OnEnable()
@@ -84,6 +101,11 @@ public sealed class BuildController : MonoBehaviour
         BindInput(rotateCWAction, OnRotateCWPerformed);
         BindInput(rotateCCWAction, OnRotateCCWPerformed);
         BindInput(toggleToolAction, OnToggleToolPerformed);
+
+        BindInput(color1Action, OnColor1Performed);
+        BindInput(color2Action, OnColor2Performed);
+        BindInput(color3Action, OnColor3Performed);
+        BindInput(color4Action, OnColor4Performed);
     }
 
     private void OnDisable()
@@ -96,11 +118,22 @@ public sealed class BuildController : MonoBehaviour
         UnbindInput(rotateCWAction, OnRotateCWPerformed);
         UnbindInput(rotateCCWAction, OnRotateCCWPerformed);
         UnbindInput(toggleToolAction, OnToggleToolPerformed);
+
+        UnbindInput(color1Action, OnColor1Performed);
+        UnbindInput(color2Action, OnColor2Performed);
+        UnbindInput(color3Action, OnColor3Performed);
+        UnbindInput(color4Action, OnColor4Performed);
     }
 
     private void Update()
     {
         if (app == null)
+            return;
+
+        if (!IsBuildEnabled)
+            return;
+
+        if (IsPointerOverUI())
             return;
 
         app.TickPreview();
@@ -110,12 +143,20 @@ public sealed class BuildController : MonoBehaviour
     {
         state.SelectedObjectID = objectId;
         app?.RefreshPreview();
+        NotifySelectionChanged();
     }
+
     public void SetSelectedColor(BlockColor color)
     {
+        SelectedColor = color;
         state.SetSelectedColor(color);
         app?.RefreshPreview();
+        NotifySelectionChanged();
+
+        if (debugLogs)
+            Debug.Log($"[BuildController] Selected Color = {color}");
     }
+
     public void SetTool(BuildTool tool)
     {
         if (tool != BuildTool.Move)
@@ -143,34 +184,58 @@ public sealed class BuildController : MonoBehaviour
 
     public void Undo()
     {
+        if (!IsBuildEnabled)
+            return;
+
         app?.Undo();
         app?.RefreshPreview();
     }
 
     public void Redo()
     {
+        if (!IsBuildEnabled)
+            return;
+
         app?.Redo();
         app?.RefreshPreview();
     }
 
     public void CancelCurrentOperation()
     {
-        app?.CancelMove();
-        state.CancelLine();
-        context?.Preview?.Clear();
-        context?.Drone?.SetIdle();
+        if (app != null)
+            app.CancelMove();
+
+        if (state != null)
+            state.CancelLine();
+
+        if (context != null)
+        {
+            context.Preview?.Clear();
+            context.Drone?.SetIdle();
+        }
+
+        if (debugLogs)
+            Debug.Log("[BuildController] CancelCurrentOperation called");
     }
 
     private void OnPlacePerformed(InputAction.CallbackContext _)
     {
         if (app == null)
             return;
-        if (droneCompanion && droneCompanion != null && droneCompanion.IsBusy)
+
+        if (!IsBuildEnabled)
+            return;
+
+        if (IsPointerOverUI())
+            return;
+
+        if (droneCompanion != null && droneCompanion.IsBusy)
         {
             if (debugLogs)
                 Debug.Log("[Build] Drone is busy. Placement blocked.");
             return;
         }
+
         app.Place();
         app.RefreshPreview();
     }
@@ -179,12 +244,20 @@ public sealed class BuildController : MonoBehaviour
     {
         if (app == null)
             return;
+
+        if (!IsBuildEnabled)
+            return;
+
+        if (IsPointerOverUI())
+            return;
+
         if (droneCompanion != null && droneCompanion.IsBusy)
         {
             if (debugLogs)
                 Debug.Log("[Build] Drone is busy. Remove blocked.");
             return;
         }
+
         app.Remove();
         app.RefreshPreview();
     }
@@ -194,6 +267,12 @@ public sealed class BuildController : MonoBehaviour
         if (app == null)
             return;
 
+        if (!IsBuildEnabled)
+            return;
+
+        if (IsPointerOverUI())
+            return;
+
         state.PlaceTool = BuildTool.Move;
         app.Move();
         app.RefreshPreview();
@@ -201,28 +280,63 @@ public sealed class BuildController : MonoBehaviour
 
     private void OnUndoPerformed(InputAction.CallbackContext _)
     {
+        if (!IsBuildEnabled)
+            return;
+
         Undo();
     }
 
     private void OnRedoPerformed(InputAction.CallbackContext _)
     {
+        if (!IsBuildEnabled)
+            return;
+
         Redo();
     }
 
     private void OnRotateCWPerformed(InputAction.CallbackContext _)
     {
+        if (!IsBuildEnabled)
+            return;
+
         RotateCW();
     }
 
     private void OnRotateCCWPerformed(InputAction.CallbackContext _)
     {
+        if (!IsBuildEnabled)
+            return;
+
         RotateCCW();
     }
 
     private void OnToggleToolPerformed(InputAction.CallbackContext _)
     {
+        if (!IsBuildEnabled)
+            return;
+
         ToggleTool();
         app?.RefreshPreview();
+    }
+
+    private void OnColor1Performed(InputAction.CallbackContext _)
+    {
+        SetSelectedColor(BlockColor.Blue);
+    }
+
+    private void OnColor2Performed(InputAction.CallbackContext _)
+    {
+        SetSelectedColor(BlockColor.Red);
+    }
+
+    private void OnColor3Performed(InputAction.CallbackContext _)
+    {
+        SetSelectedColor(BlockColor.Yellow);
+    }
+
+    private void OnColor4Performed(InputAction.CallbackContext _)
+    {
+        SetSelectedColor(BlockColor.Green);
     }
 
     private void ToggleTool()
@@ -247,6 +361,11 @@ public sealed class BuildController : MonoBehaviour
         app?.CancelMove();
     }
 
+    private void NotifySelectionChanged()
+    {
+        OnSelectionChanged?.Invoke(state.SelectedObjectID, state.SelectedColor);
+    }
+
     private void ValidateReferences()
     {
         if (grid == null) Debug.LogError("[BuildController] GridManager is missing.", this);
@@ -256,7 +375,7 @@ public sealed class BuildController : MonoBehaviour
         if (previewMaterial == null) Debug.LogError("[BuildController] Preview Material is missing.", this);
     }
 
-    private static void BindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
+    private static void BindInput(InputActionReference actionRef, Action<InputAction.CallbackContext> callback)
     {
         if (actionRef == null || actionRef.action == null)
             return;
@@ -265,12 +384,20 @@ public sealed class BuildController : MonoBehaviour
         actionRef.action.Enable();
     }
 
-    private static void UnbindInput(InputActionReference actionRef, System.Action<InputAction.CallbackContext> callback)
+    private static void UnbindInput(InputActionReference actionRef, Action<InputAction.CallbackContext> callback)
     {
         if (actionRef == null || actionRef.action == null)
             return;
 
         actionRef.action.performed -= callback;
         actionRef.action.Disable();
+    }
+
+    private bool IsPointerOverUI()
+    {
+        if (EventSystem.current == null)
+            return false;
+
+        return EventSystem.current.IsPointerOverGameObject();
     }
 }

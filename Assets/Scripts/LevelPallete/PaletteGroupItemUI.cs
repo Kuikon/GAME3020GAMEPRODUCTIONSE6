@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class PaletteGroupItemUI : MonoBehaviour
 {
@@ -37,52 +36,40 @@ public class PaletteGroupItemUI : MonoBehaviour
         for (int i = 0; i < colors.Count; i++)
         {
             BlockColor color = colors[i];
-            GameObject prefab = data.GetPrefab(color);
 
-            if (prefab == null)
-                continue;
+            Texture thumbnail = thumbnailGenerator != null
+                ? thumbnailGenerator.GetThumbnail(data, color)
+                : null;
 
-            Texture thumbnail = null;
-            if (thumbnailGenerator != null)
-                thumbnail = thumbnailGenerator.GetThumbnail(data, color);
+            var buttonUI = Instantiate(colorVariantButtonPrefab, colorVariantRoot);
 
-            bool isSelected = data.ID == selectedObjectID && color == selectedColor;
+            bool isSelected = (data.ID == selectedObjectID && color == selectedColor);
 
-            ColorVariantButtonUI btn = Instantiate(colorVariantButtonPrefab, colorVariantRoot);
-
-            btn.gameObject.SetActive(true);
-            btn.enabled = true;
-
-            Button uiButton = btn.GetComponent<Button>();
-            if (uiButton != null)
-                uiButton.enabled = true;
-
-            btn.Setup(data.ID, color, thumbnail, owner, isSelected);
-            variantButtons.Add(btn);
-
-            Debug.Log(
-                $"[PaletteGroupItemUI] Created button {color} " +
-                $"activeSelf={btn.gameObject.activeSelf}, " +
-                $"activeInHierarchy={btn.gameObject.activeInHierarchy}, " +
-                $"scriptEnabled={btn.enabled}"
+            buttonUI.Setup(
+                data.ID,
+                color,
+                thumbnail,
+                owner,
+                isSelected
             );
-        }
 
-        Debug.Log($"[PaletteGroupItemUI] Created {variantButtons.Count} color buttons for {data.Name}");
+            variantButtons.Add(buttonUI);
+        }
     }
 
     public void RefreshSelected(int selectedObjectID, BlockColor selectedColor)
     {
         for (int i = 0; i < variantButtons.Count; i++)
         {
-            if (variantButtons[i] == null)
+            var buttonUI = variantButtons[i];
+            if (buttonUI == null)
                 continue;
 
             bool isSelected =
-                variantButtons[i].ObjectID == selectedObjectID &&
-                variantButtons[i].Color == selectedColor;
+                buttonUI.ObjectID == selectedObjectID &&
+                buttonUI.Color == selectedColor;
 
-            variantButtons[i].SetSelected(isSelected);
+            buttonUI.SetSelected(isSelected);
         }
     }
 
@@ -93,21 +80,10 @@ public class PaletteGroupItemUI : MonoBehaviour
         if (data == null)
             return result;
 
-        if (data.HasExactColorVariant(BlockColor.Blue))
-            result.Add(BlockColor.Blue);
-
-        if (data.HasExactColorVariant(BlockColor.Red))
-            result.Add(BlockColor.Red);
-
-        if (data.HasExactColorVariant(BlockColor.Yellow))
-            result.Add(BlockColor.Yellow);
-
-        if (data.HasExactColorVariant(BlockColor.Green))
-            result.Add(BlockColor.Green);
-        if (result.Count == 0 && data.GetPrefab(BlockColor.Blue) != null)
-        {
-            result.Add(BlockColor.Blue);
-        }
+        if (data.HasColorVariant(BlockColor.Blue)) result.Add(BlockColor.Blue);
+        if (data.HasColorVariant(BlockColor.Red)) result.Add(BlockColor.Red);
+        if (data.HasColorVariant(BlockColor.Yellow)) result.Add(BlockColor.Yellow);
+        if (data.HasColorVariant(BlockColor.Green)) result.Add(BlockColor.Green);
 
         return result;
     }

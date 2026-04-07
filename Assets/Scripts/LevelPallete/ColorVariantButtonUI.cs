@@ -26,16 +26,13 @@ public class ColorVariantButtonUI : MonoBehaviour
 
         if (thumbnailImage != null)
         {
-            if (thumbnail != null)
-            {
-                thumbnailImage.texture = thumbnail;
+            thumbnailImage.texture = thumbnail;
+            thumbnailImage.enabled = thumbnail != null;
 
-            }
+            if (thumbnail != null)
+                thumbnailImage.color = UnityEngine.Color.white;
             else
-            {
-                thumbnailImage.texture = null;
                 thumbnailImage.color = new Color(1f, 1f, 1f, 0f);
-            }
         }
 
         if (button != null)
@@ -55,7 +52,12 @@ public class ColorVariantButtonUI : MonoBehaviour
 
     private void OnClick()
     {
-        Debug.Log("CLICKED!");
-        owner?.SelectItem(ObjectID, Color);
+        Texture icon = thumbnailImage != null ? thumbnailImage.texture : null;
+        owner?.SelectItem(ObjectID, Color, icon);
+    }
+
+    public Texture GetIconTexture()
+    {
+        return thumbnailImage != null ? thumbnailImage.texture : null;
     }
 }

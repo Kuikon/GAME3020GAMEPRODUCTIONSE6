@@ -5,7 +5,8 @@ public class PaletteWindowUI : MonoBehaviour
     [Header("Panels")]
     [SerializeField] private GameObject categoryPanel;
     [SerializeField] private GameObject itemPanel;
-
+    [Header("Build System")]
+    [SerializeField] private BuildController buildController;
     private bool isOpen = false;
 
     void Start()
@@ -26,5 +27,9 @@ public class PaletteWindowUI : MonoBehaviour
 
         if (itemPanel != null)
             itemPanel.SetActive(isOpen);
+        buildController.IsBuildEnabled = !isOpen;
+
+        if (isOpen)
+            buildController.CancelCurrentOperation();
     }
 }
