@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class DroneCompanionController : MonoBehaviour
@@ -70,8 +71,12 @@ public class DroneCompanionController : MonoBehaviour
     private bool hasReactTarget;
 
     private GameObject currentBuildObject;
+    private readonly List<GameObject> currentBuildGroup = new List<GameObject>();
     private Transform removeTarget;
     private Transform moveTarget;
+
+    private Bounds currentBuildBounds;
+    private bool hasBuildBounds;
 
     private Coroutine buildRoutine;
     private Coroutine removeRoutine;
@@ -90,8 +95,7 @@ public class DroneCompanionController : MonoBehaviour
     private void Awake()
     {
         CacheLaserArrays();
-        laserVisible = false;
-        HideAllLasersImmediate();
+        ResetLasersImmediate();
     }
 
     private void Update()
@@ -107,33 +111,28 @@ public class DroneCompanionController : MonoBehaviour
                 break;
 
             case DroneState.Build:
-                UpdateBuildFollowOnly();
+                UpdateBuild();
                 break;
 
             case DroneState.Remove:
-                UpdateRemoveFollowOnly();
+                UpdateRemove();
                 break;
 
             case DroneState.Move:
-                UpdateMoveFollowOnly();
+                UpdateMove();
                 break;
         }
     }
 
+    // ---------------------------------------------------------------------
+    // Public API
+    // ---------------------------------------------------------------------
+
     public void SetIdle()
     {
-        currentState = DroneState.Idle;
-        hasReactTarget = false;
-        currentBuildObject = null;
-        removeTarget = null;
-        moveTarget = null;
-
-        StopBuildRoutine();
-        StopRemoveRoutine();
-        StopCarryRoutine();
-
-        laserVisible = false;
-        HideAllLasersImmediate();
+        ClearTargets();
+        StopAllSequences();
+        EnterIdleState();
     }
 
     public void SetReactTarget(Vector3 worldPos)
@@ -141,33 +140,49 @@ public class DroneCompanionController : MonoBehaviour
         reactWorldTarget = worldPos;
         hasReactTarget = true;
 
-        if (currentState != DroneState.Build &&
-            currentState != DroneState.Remove &&
-            currentState != DroneState.Move)
-        {
+        if (!IsBusy && !IsCarrying)
             currentState = DroneState.React;
-        }
     }
 
     public void PlayBuild(GameObject spawnedObject)
     {
-        if (spawnedObject == null)
+        if (spawnedObject == null || IsBusy || IsCarrying)
             return;
 
-        if (IsBusy || IsCarrying)
+        PrepareForBuildObject(spawnedObject);
+        buildRoutine = StartCoroutine(CoBuildSequence());
+    }
+
+    public void PlayBuildGroup(List<GameObject> targets)
+    {
+        if (targets == null || targets.Count == 0 || IsBusy || IsCarrying)
             return;
 
-        currentBuildObject = spawnedObject;
+        if (!TryGetMergedBounds(targets, out Bounds merged))
+            return;
+
+        StopAllSequences();
+
+        currentBuildGroup.Clear();
+        for (int i = 0; i < targets.Count; i++)
+        {
+            GameObject go = targets[i];
+            if (go == null)
+                continue;
+
+            currentBuildGroup.Add(go);
+            SetRenderersVisible(go, false);
+        }
+
+        currentBuildBounds = merged;
+        hasBuildBounds = true;
+        currentBuildObject = null;
+        removeTarget = null;
+        moveTarget = null;
         currentState = DroneState.Build;
 
-        StopBuildRoutine();
-        StopRemoveRoutine();
-        StopCarryRoutine();
-
-        laserVisible = false;
-        HideAllLasersImmediate();
-        SetRenderersVisible(currentBuildObject, false);
-        buildRoutine = StartCoroutine(CoBuildSequence());
+        ResetLasersImmediate();
+        buildRoutine = StartCoroutine(CoBuildGroupSequence());
     }
 
     public void PlayBuildAt(Vector3 worldPos)
@@ -175,9 +190,11 @@ public class DroneCompanionController : MonoBehaviour
         if (IsBusy || IsCarrying)
             return;
 
-        StopBuildRoutine();
-        StopRemoveRoutine();
-        StopCarryRoutine();
+        StopAllSequences();
+        hasBuildBounds = false;
+        currentBuildObject = null;
+        currentState = DroneState.Build;
+        ResetLasersImmediate();
 
         buildRoutine = StartCoroutine(CoBuildAtSequence(worldPos));
     }
@@ -193,16 +210,15 @@ public class DroneCompanionController : MonoBehaviour
         if (IsCarrying)
             CancelCarry();
 
+        StopAllSequences();
+
+        hasBuildBounds = false;
+        currentBuildObject = null;
         removeTarget = target;
+        moveTarget = null;
         currentState = DroneState.Remove;
 
-        StopBuildRoutine();
-        StopRemoveRoutine();
-        StopCarryRoutine();
-
-        laserVisible = false;
-        HideAllLasersImmediate();
-
+        ResetLasersImmediate();
         removeRoutine = StartCoroutine(CoRemoveSequence());
     }
 
@@ -217,10 +233,11 @@ public class DroneCompanionController : MonoBehaviour
         if (IsBusy)
             return;
 
-        StopBuildRoutine();
-        StopRemoveRoutine();
-        StopCarryRoutine();
+        StopAllSequences();
 
+        hasBuildBounds = false;
+        currentBuildObject = null;
+        removeTarget = null;
         moveTarget = target;
         hasReactTarget = false;
         currentState = DroneState.Move;
@@ -238,7 +255,7 @@ public class DroneCompanionController : MonoBehaviour
         if (moveTarget == null)
         {
             CancelCarry();
-            SequenceFinished?.Invoke();
+            NotifySequenceFinished();
             return;
         }
 
@@ -249,13 +266,13 @@ public class DroneCompanionController : MonoBehaviour
     public void CancelCarry()
     {
         StopCarryRoutine();
-
         moveTarget = null;
-        laserVisible = false;
-        HideAllLasersImmediate();
-
-        currentState = DroneState.Idle;
+        EnterIdleState();
     }
+
+    // ---------------------------------------------------------------------
+    // State Updates
+    // ---------------------------------------------------------------------
 
     private void UpdateIdle()
     {
@@ -272,25 +289,35 @@ public class DroneCompanionController : MonoBehaviour
             return;
         }
 
-        Vector3 targetPos = reactWorldTarget + Vector3.up * reactHeightOffset;
-        targetPos += GetFloatOffset();
-
+        Vector3 targetPos = reactWorldTarget + Vector3.up * reactHeightOffset + GetFloatOffset();
         MoveDrone(targetPos, reactMoveLerpSpeed);
         RotateDrone(reactWorldTarget);
     }
 
-    private void UpdateBuildFollowOnly()
+    private void UpdateBuild()
     {
-        if (currentBuildObject == null)
-            return;
+        if (hasBuildBounds)
+        {
+            Vector3 targetPos = currentBuildBounds.center + buildHoverOffset + GetFloatOffset();
+            MoveDrone(targetPos, buildMoveLerpSpeed);
+            RotateDrone(currentBuildBounds.center);
 
-        MoveToObject(currentBuildObject, buildMoveLerpSpeed);
+            if (laserVisible)
+                UpdateLaserToBounds(currentBuildBounds);
+        }
+        else
+        {
+            if (currentBuildObject == null)
+                return;
 
-        if (laserVisible)
-            UpdateLaserToObject(currentBuildObject);
+            MoveToObject(currentBuildObject, buildMoveLerpSpeed);
+
+            if (laserVisible)
+                UpdateLaserToObject(currentBuildObject);
+        }
     }
 
-    private void UpdateRemoveFollowOnly()
+    private void UpdateRemove()
     {
         if (removeTarget == null)
             return;
@@ -301,7 +328,7 @@ public class DroneCompanionController : MonoBehaviour
             UpdateLaserToObject(removeTarget.gameObject);
     }
 
-    private void UpdateMoveFollowOnly()
+    private void UpdateMove()
     {
         if (moveTarget == null)
         {
@@ -320,72 +347,73 @@ public class DroneCompanionController : MonoBehaviour
         UpdateLaserToObject(moveTarget.gameObject);
     }
 
+    // ---------------------------------------------------------------------
+    // Build / Remove / Carry Sequences
+    // ---------------------------------------------------------------------
+
     private IEnumerator CoBuildSequence()
     {
         yield return CoMoveUntilArrived(currentBuildObject, buildMoveLerpSpeed);
 
         if (currentBuildObject == null)
         {
-            laserVisible = false;
+            EnterIdleState();
             buildRoutine = null;
-            currentState = DroneState.Idle;
-            SequenceFinished?.Invoke();
+            NotifySequenceFinished();
             yield break;
         }
 
         SetRenderersVisible(currentBuildObject, true);
         PlayBuildEffect(currentBuildObject);
 
-        laserVisible = true;
-        ShowAllLasersImmediate();
+        yield return CoLaserActiveDuration(
+            () => currentBuildObject != null,
+            () => UpdateBuild()
+        );
 
-        float time = 0f;
-
-        while (time < buildDuration)
-        {
-            if (currentBuildObject == null)
-                break;
-
-            UpdateBuildFollowOnly();
-            FadeLasersToward(laserMaxAlpha);
-            PulseLasers();
-
-            time += Time.deltaTime;
-            yield return null;
-        }
-
-        float fadeTime = 0.12f;
-        float t = 0f;
-
-        while (t < fadeTime)
-        {
-            if (currentBuildObject != null)
-                UpdateBuildFollowOnly();
-
-            float alpha = Mathf.Lerp(laserMaxAlpha, 0f, t / fadeTime);
-            SetLaserAlpha(alpha);
-            FadeLasersToward(alpha);
-            PulseLasers();
-
-            t += Time.deltaTime;
-            yield return null;
-        }
-
-        laserVisible = false;
-        HideAllLasersImmediate();
         currentBuildObject = null;
         buildRoutine = null;
-        currentState = DroneState.Idle;
+        EnterIdleState();
+        NotifySequenceFinished();
+    }
 
-        SequenceFinished?.Invoke();
+    private IEnumerator CoBuildGroupSequence()
+    {
+        yield return CoMoveUntilArrivedBounds(currentBuildBounds, buildMoveLerpSpeed);
+
+        if (currentBuildGroup.Count == 0)
+        {
+            hasBuildBounds = false;
+            buildRoutine = null;
+            EnterIdleState();
+            NotifySequenceFinished();
+            yield break;
+        }
+
+        for (int i = 0; i < currentBuildGroup.Count; i++)
+        {
+            GameObject go = currentBuildGroup[i];
+            if (go == null)
+                continue;
+
+            SetRenderersVisible(go, true);
+            PlayBuildEffect(go);
+        }
+
+        yield return CoLaserActiveDuration(
+            () => hasBuildBounds,
+            () => UpdateBuild()
+        );
+
+        currentBuildGroup.Clear();
+        hasBuildBounds = false;
+        buildRoutine = null;
+        EnterIdleState();
+        NotifySequenceFinished();
     }
 
     private IEnumerator CoBuildAtSequence(Vector3 worldPos)
     {
-        currentState = DroneState.Build;
-        laserVisible = false;
-        HideAllLasersImmediate();
-
         float time = 0f;
 
         while (time < maxApproachTime)
@@ -395,18 +423,16 @@ public class DroneCompanionController : MonoBehaviour
             MoveDrone(targetPos, buildMoveLerpSpeed);
             RotateDrone(worldPos);
 
-            float distance = Vector3.Distance(transform.position, targetPos);
-            if (distance <= arrivalDistance)
+            if (Vector3.Distance(transform.position, targetPos) <= arrivalDistance)
                 break;
 
             time += Time.deltaTime;
             yield return null;
         }
 
-        currentState = DroneState.Idle;
         buildRoutine = null;
-
-        SequenceFinished?.Invoke();
+        EnterIdleState();
+        NotifySequenceFinished();
     }
 
     private IEnumerator CoRemoveSequence()
@@ -415,29 +441,26 @@ public class DroneCompanionController : MonoBehaviour
 
         if (removeTarget == null)
         {
-            laserVisible = false;
-            HideAllLasersImmediate();
-            currentState = DroneState.Idle;
             removeRoutine = null;
-            SequenceFinished?.Invoke();
+            EnterIdleState();
+            NotifySequenceFinished();
             yield break;
         }
 
         laserVisible = true;
         ShowAllLasersImmediate();
 
-        // ‚±‚±‚ÅíœŠJŽn‚³‚¹‚é
-        SequenceFinished?.Invoke();
+        NotifySequenceFinished();
 
-        float removeLaserDuration = 0.5f;
         float t = 0f;
+        const float removeLaserDuration = 0.5f;
 
         while (t < removeLaserDuration)
         {
             if (removeTarget == null)
                 break;
 
-            UpdateRemoveFollowOnly();
+            UpdateRemove();
             FadeLasersToward(laserMaxAlpha);
             PulseLasers();
 
@@ -445,10 +468,8 @@ public class DroneCompanionController : MonoBehaviour
             yield return null;
         }
 
-        laserVisible = false;
-        HideAllLasersImmediate();
-        currentState = DroneState.Idle;
         removeRoutine = null;
+        EnterIdleState();
     }
 
     private IEnumerator CoCommitCarrySequence()
@@ -463,7 +484,7 @@ public class DroneCompanionController : MonoBehaviour
             if (moveTarget == null)
                 break;
 
-            UpdateMoveFollowOnly();
+            UpdateMove();
 
             float alpha = Mathf.Lerp(laserMaxAlpha, 0f, t / carryCommitFadeDuration);
             SetLaserAlpha(alpha);
@@ -474,14 +495,52 @@ public class DroneCompanionController : MonoBehaviour
             yield return null;
         }
 
-        laserVisible = false;
-        HideAllLasersImmediate();
         moveTarget = null;
         carryRoutine = null;
-        currentState = DroneState.Idle;
-
-        SequenceFinished?.Invoke();
+        EnterIdleState();
+        NotifySequenceFinished();
     }
+
+    private IEnumerator CoLaserActiveDuration(Func<bool> keepRunning, Action updateAction)
+    {
+        laserVisible = true;
+        ShowAllLasersImmediate();
+
+        float time = 0f;
+        while (time < buildDuration)
+        {
+            if (!keepRunning())
+                break;
+
+            updateAction?.Invoke();
+            FadeLasersToward(laserMaxAlpha);
+            PulseLasers();
+
+            time += Time.deltaTime;
+            yield return null;
+        }
+
+        float fadeTime = 0.12f;
+        float t = 0f;
+
+        while (t < fadeTime)
+        {
+            if (keepRunning())
+                updateAction?.Invoke();
+
+            float alpha = Mathf.Lerp(laserMaxAlpha, 0f, t / fadeTime);
+            SetLaserAlpha(alpha);
+            FadeLasersToward(alpha);
+            PulseLasers();
+
+            t += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // Move Helpers
+    // ---------------------------------------------------------------------
 
     private IEnumerator CoMoveUntilArrived(GameObject targetObject, float moveSpeed)
     {
@@ -500,8 +559,26 @@ public class DroneCompanionController : MonoBehaviour
             else
                 RotateDrone(targetObject.transform.position);
 
-            float distance = Vector3.Distance(transform.position, targetPos);
-            if (distance <= arrivalDistance)
+            if (Vector3.Distance(transform.position, targetPos) <= arrivalDistance)
+                yield break;
+
+            time += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    private IEnumerator CoMoveUntilArrivedBounds(Bounds bounds, float moveSpeed)
+    {
+        float time = 0f;
+
+        while (time < maxApproachTime)
+        {
+            Vector3 targetPos = bounds.center + buildHoverOffset + GetFloatOffset();
+
+            MoveDrone(targetPos, moveSpeed);
+            RotateDrone(bounds.center);
+
+            if (Vector3.Distance(transform.position, targetPos) <= arrivalDistance)
                 yield break;
 
             time += Time.deltaTime;
@@ -523,28 +600,134 @@ public class DroneCompanionController : MonoBehaviour
             RotateDrone(targetObject.transform.position);
     }
 
-    private void PlayBuildEffect(GameObject targetObject)
+    private void MoveDrone(Vector3 targetPos, float moveSpeed)
     {
-        if (targetObject == null)
+        transform.position = Vector3.MoveTowards(
+            transform.position,
+            targetPos,
+            moveSpeed * Time.deltaTime);
+    }
+
+    private void RotateDrone(Vector3 lookTarget)
+    {
+        Vector3 toTarget = lookTarget - transform.position;
+        toTarget.y = 0f;
+
+        if (toTarget.sqrMagnitude < 0.0001f)
             return;
 
-        BuildEffectUtility.PlayBuildEffect(targetObject);
+        Quaternion targetRot = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, Time.deltaTime * rotateSpeed);
+    }
+
+    // ---------------------------------------------------------------------
+    // Target / Position Helpers
+    // ---------------------------------------------------------------------
+
+    private Vector3 GetIdleFollowPosition()
+    {
+        if (boyTarget == null)
+            return transform.position;
+
+        Vector3 worldOffset = boyTarget.TransformDirection(localOffset);
+        return boyTarget.position + worldOffset + GetFloatOffset();
+    }
+
+    private Vector3 GetBuildHoverPosition(GameObject targetObject)
+    {
+        if (targetObject == null)
+            return transform.position;
+
+        if (TryGetObjectBounds(targetObject, out Bounds bounds))
+            return bounds.center + buildHoverOffset + GetFloatOffset();
+
+        return targetObject.transform.position + buildHoverOffset + GetFloatOffset();
+    }
+
+    private Vector3 GetLookTargetPosition()
+    {
+        if (boyTarget == null)
+            return transform.position + transform.forward;
+
+        return boyTarget.position + Vector3.up * 1.0f;
+    }
+
+    private Vector3 GetFloatOffset()
+    {
+        float y = Mathf.Sin(Time.time * floatFrequency) * floatAmplitude;
+        return new Vector3(0f, y, 0f);
+    }
+
+    // ---------------------------------------------------------------------
+    // Laser
+    // ---------------------------------------------------------------------
+
+    private void CacheLaserArrays()
+    {
+        int extraCount = extraLasers != null ? extraLasers.Length : 0;
+        cachedLasers = new LineRenderer[1 + extraCount];
+        cachedLasers[0] = mainLaser;
+
+        for (int i = 0; i < extraCount; i++)
+            cachedLasers[i + 1] = extraLasers[i];
+
+        int extraStartCount = extraLaserStartPoints != null ? extraLaserStartPoints.Length : 0;
+        cachedLaserStarts = new Transform[1 + extraStartCount];
+        cachedLaserStarts[0] = laserStartPoint;
+
+        for (int i = 0; i < extraStartCount; i++)
+            cachedLaserStarts[i + 1] = extraLaserStartPoints[i];
+    }
+
+    private void ResetLasersImmediate()
+    {
+        laserVisible = false;
+        HideAllLasersImmediate();
+    }
+
+    private void ShowAllLasersImmediate()
+    {
+        if (cachedLasers == null)
+            return;
+
+        for (int i = 0; i < cachedLasers.Length; i++)
+        {
+            if (cachedLasers[i] == null)
+                continue;
+
+            cachedLasers[i].enabled = true;
+            cachedLasers[i].positionCount = 2;
+        }
+    }
+
+    private void HideAllLasersImmediate()
+    {
+        if (cachedLasers == null)
+            return;
+
+        for (int i = 0; i < cachedLasers.Length; i++)
+        {
+            if (cachedLasers[i] == null)
+                continue;
+
+            cachedLasers[i].enabled = false;
+            cachedLasers[i].positionCount = 0;
+        }
     }
 
     private void UpdateLaserToObject(GameObject targetObject)
     {
-        if (targetObject == null)
+        if (targetObject == null || !TryGetObjectBounds(targetObject, out Bounds bounds))
         {
             HideAllLasersImmediate();
             return;
         }
 
-        if (!TryGetObjectBounds(targetObject, out Bounds bounds))
-        {
-            HideAllLasersImmediate();
-            return;
-        }
+        UpdateLaserToBounds(bounds);
+    }
 
+    private void UpdateLaserToBounds(Bounds bounds)
+    {
         Vector3[] corners = GetTopFourCorners(bounds);
 
         for (int i = 0; i < cachedLasers.Length; i++)
@@ -564,65 +747,78 @@ public class DroneCompanionController : MonoBehaviour
         }
     }
 
-    private Vector3 GetIdleFollowPosition()
+    private Transform GetLaserStartTransform(int index)
     {
-        if (boyTarget == null)
-            return transform.position;
+        if (cachedLaserStarts == null)
+            return null;
 
-        Vector3 worldOffset = boyTarget.TransformDirection(localOffset);
-        Vector3 basePos = boyTarget.position + worldOffset;
-        return basePos + GetFloatOffset();
+        if (index < 0 || index >= cachedLaserStarts.Length)
+            return null;
+
+        return cachedLaserStarts[index];
     }
 
-    private Vector3 GetBuildHoverPosition(GameObject targetObject)
+    private void FadeLasersToward(float targetAlpha)
     {
-        if (targetObject == null)
-            return transform.position;
-
-        if (TryGetObjectBounds(targetObject, out Bounds bounds))
-        {
-            Vector3 basePos = bounds.center + buildHoverOffset;
-            return basePos + GetFloatOffset();
-        }
-
-        return targetObject.transform.position + buildHoverOffset + GetFloatOffset();
-    }
-
-    private Vector3 GetLookTargetPosition()
-    {
-        if (boyTarget == null)
-            return transform.position + transform.forward;
-
-        return boyTarget.position + Vector3.up * 1.0f;
-    }
-
-    private Vector3 GetFloatOffset()
-    {
-        float y = Mathf.Sin(Time.time * floatFrequency) * floatAmplitude;
-        return new Vector3(0f, y, 0f);
-    }
-
-    private void MoveDrone(Vector3 targetPos, float moveSpeed)
-    {
-        transform.position = Vector3.MoveTowards(
-            transform.position,
-            targetPos,
-            moveSpeed * Time.deltaTime);
-    }
-
-    private void RotateDrone(Vector3 lookTarget)
-    {
-        Vector3 toTarget = lookTarget - transform.position;
-        toTarget.y = 0f;
-
-        if (toTarget.sqrMagnitude < 0.0001f)
+        if (cachedLasers == null)
             return;
 
-        Quaternion targetRot = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
-        transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            targetRot,
-            Time.deltaTime * rotateSpeed);
+        for (int i = 0; i < cachedLasers.Length; i++)
+        {
+            LineRenderer lr = cachedLasers[i];
+            if (lr == null)
+                continue;
+
+            Color start = lr.startColor;
+            Color end = lr.endColor;
+
+            start.a = Mathf.Lerp(start.a, targetAlpha, Time.deltaTime * laserAppearSpeed);
+            end.a = Mathf.Lerp(end.a, targetAlpha, Time.deltaTime * laserAppearSpeed);
+
+            lr.startColor = start;
+            lr.endColor = end;
+        }
+    }
+
+    private void SetLaserAlpha(float alpha)
+    {
+        if (cachedLasers == null)
+            return;
+
+        for (int i = 0; i < cachedLasers.Length; i++)
+        {
+            LineRenderer lr = cachedLasers[i];
+            if (lr == null)
+                continue;
+
+            Color start = lr.startColor;
+            Color end = lr.endColor;
+
+            start.a = alpha;
+            end.a = alpha;
+
+            lr.startColor = start;
+            lr.endColor = end;
+        }
+    }
+
+    private void PulseLasers()
+    {
+        if (cachedLasers == null)
+            return;
+
+        float t = Mathf.Sin(Time.time * pulseSpeed) * 0.5f + 0.5f;
+        float width = Mathf.Lerp(pulseMinWidth, pulseMaxWidth, t);
+
+        for (int i = 0; i < cachedLasers.Length; i++)
+        {
+            LineRenderer lr = cachedLasers[i];
+            if (lr == null)
+                continue;
+
+            lr.startWidth = width;
+            lr.endWidth = width;
+        }
     }
 
     private Vector3[] GetTopFourCorners(Bounds bounds)
@@ -631,14 +827,18 @@ public class DroneCompanionController : MonoBehaviour
         Vector3 ext = bounds.extents;
         float y = bounds.max.y + boundsTopSurfaceOffset;
 
-        Vector3[] corners = new Vector3[4];
-        corners[0] = new Vector3(center.x - ext.x, y, center.z - ext.z);
-        corners[1] = new Vector3(center.x - ext.x, y, center.z + ext.z);
-        corners[2] = new Vector3(center.x + ext.x, y, center.z - ext.z);
-        corners[3] = new Vector3(center.x + ext.x, y, center.z + ext.z);
-
-        return corners;
+        return new[]
+        {
+            new Vector3(center.x - ext.x, y, center.z - ext.z),
+            new Vector3(center.x - ext.x, y, center.z + ext.z),
+            new Vector3(center.x + ext.x, y, center.z - ext.z),
+            new Vector3(center.x + ext.x, y, center.z + ext.z)
+        };
     }
+
+    // ---------------------------------------------------------------------
+    // Bounds
+    // ---------------------------------------------------------------------
 
     private bool TryGetObjectBounds(GameObject targetObject, out Bounds bounds)
     {
@@ -651,7 +851,6 @@ public class DroneCompanionController : MonoBehaviour
         {
             if (TryGetRendererBounds(targetObject, out bounds))
                 return true;
-
             if (TryGetColliderBounds(targetObject, out bounds))
                 return true;
         }
@@ -659,13 +858,44 @@ public class DroneCompanionController : MonoBehaviour
         {
             if (TryGetColliderBounds(targetObject, out bounds))
                 return true;
-
             if (TryGetRendererBounds(targetObject, out bounds))
                 return true;
         }
 
         bounds = new Bounds(targetObject.transform.position, Vector3.one * 0.5f);
         return true;
+    }
+
+    private bool TryGetMergedBounds(List<GameObject> objects, out Bounds merged)
+    {
+        merged = default;
+
+        if (objects == null || objects.Count == 0)
+            return false;
+
+        bool found = false;
+
+        for (int i = 0; i < objects.Count; i++)
+        {
+            GameObject go = objects[i];
+            if (go == null)
+                continue;
+
+            if (!TryGetObjectBounds(go, out Bounds b))
+                continue;
+
+            if (!found)
+            {
+                merged = b;
+                found = true;
+            }
+            else
+            {
+                merged.Encapsulate(b);
+            }
+        }
+
+        return found;
     }
 
     private bool TryGetRendererBounds(GameObject targetObject, out Bounds bounds)
@@ -738,129 +968,9 @@ public class DroneCompanionController : MonoBehaviour
         return true;
     }
 
-    private void CacheLaserArrays()
-    {
-        int extraCount = extraLasers != null ? extraLasers.Length : 0;
-        cachedLasers = new LineRenderer[1 + extraCount];
-        cachedLasers[0] = mainLaser;
-
-        for (int i = 0; i < extraCount; i++)
-            cachedLasers[i + 1] = extraLasers[i];
-
-        int extraStartCount = extraLaserStartPoints != null ? extraLaserStartPoints.Length : 0;
-        cachedLaserStarts = new Transform[1 + extraStartCount];
-        cachedLaserStarts[0] = laserStartPoint;
-
-        for (int i = 0; i < extraStartCount; i++)
-            cachedLaserStarts[i + 1] = extraLaserStartPoints[i];
-    }
-
-    private Transform GetLaserStartTransform(int index)
-    {
-        if (cachedLaserStarts == null)
-            return null;
-
-        if (index < 0 || index >= cachedLaserStarts.Length)
-            return null;
-
-        return cachedLaserStarts[index];
-    }
-
-    private void ShowAllLasersImmediate()
-    {
-        if (cachedLasers == null)
-            return;
-
-        for (int i = 0; i < cachedLasers.Length; i++)
-        {
-            if (cachedLasers[i] == null)
-                continue;
-
-            cachedLasers[i].enabled = true;
-            cachedLasers[i].positionCount = 2;
-        }
-    }
-
-    private void HideAllLasersImmediate()
-    {
-        if (cachedLasers == null)
-            return;
-
-        for (int i = 0; i < cachedLasers.Length; i++)
-        {
-            if (cachedLasers[i] == null)
-                continue;
-
-            cachedLasers[i].enabled = false;
-            cachedLasers[i].positionCount = 0;
-        }
-    }
-
-    private void FadeLasersToward(float targetAlpha)
-    {
-        if (cachedLasers == null)
-            return;
-
-        for (int i = 0; i < cachedLasers.Length; i++)
-        {
-            LineRenderer lr = cachedLasers[i];
-            if (lr == null)
-                continue;
-
-            Color start = lr.startColor;
-            Color end = lr.endColor;
-
-            float nextStartA = Mathf.Lerp(start.a, targetAlpha, Time.deltaTime * laserAppearSpeed);
-            float nextEndA = Mathf.Lerp(end.a, targetAlpha, Time.deltaTime * laserAppearSpeed);
-
-            start.a = nextStartA;
-            end.a = nextEndA;
-
-            lr.startColor = start;
-            lr.endColor = end;
-        }
-    }
-
-    private void SetLaserAlpha(float alpha)
-    {
-        if (cachedLasers == null)
-            return;
-
-        for (int i = 0; i < cachedLasers.Length; i++)
-        {
-            LineRenderer lr = cachedLasers[i];
-            if (lr == null)
-                continue;
-
-            Color start = lr.startColor;
-            Color end = lr.endColor;
-
-            start.a = alpha;
-            end.a = alpha;
-
-            lr.startColor = start;
-            lr.endColor = end;
-        }
-    }
-
-    private void PulseLasers()
-    {
-        if (cachedLasers == null)
-            return;
-
-        float t = Mathf.Sin(Time.time * pulseSpeed) * 0.5f + 0.5f;
-        float width = Mathf.Lerp(pulseMinWidth, pulseMaxWidth, t);
-
-        for (int i = 0; i < cachedLasers.Length; i++)
-        {
-            LineRenderer lr = cachedLasers[i];
-            if (lr == null)
-                continue;
-
-            lr.startWidth = width;
-            lr.endWidth = width;
-        }
-    }
+    // ---------------------------------------------------------------------
+    // Visual Helpers
+    // ---------------------------------------------------------------------
 
     private void SetRenderersVisible(GameObject go, bool visible)
     {
@@ -873,6 +983,77 @@ public class DroneCompanionController : MonoBehaviour
             if (renderers[i] != null)
                 renderers[i].enabled = visible;
         }
+    }
+
+    private void PlayBuildEffect(GameObject targetObject)
+    {
+        if (targetObject == null)
+            return;
+
+        BuildEffectUtility.PlayBuildEffect(targetObject);
+    }
+
+    // ---------------------------------------------------------------------
+    // Internal State Helpers
+    // ---------------------------------------------------------------------
+
+    private void PrepareForBuildObject(GameObject spawnedObject)
+    {
+        StopAllSequences();
+
+        hasBuildBounds = false;
+        currentBuildObject = spawnedObject;
+        removeTarget = null;
+        moveTarget = null;
+        currentState = DroneState.Build;
+
+        ResetLasersImmediate();
+        SetRenderersVisible(currentBuildObject, false);
+    }
+
+    private void PrepareForBuildBounds(Bounds mergedBounds)
+    {
+        StopAllSequences();
+
+        currentBuildBounds = mergedBounds;
+        hasBuildBounds = true;
+        currentBuildObject = null;
+        removeTarget = null;
+        moveTarget = null;
+        currentState = DroneState.Build;
+
+        ResetLasersImmediate();
+    }
+
+    private void EnterIdleState()
+    {
+        currentState = DroneState.Idle;
+        ResetLasersImmediate();
+    }
+
+    private void ClearTargets()
+    {
+        hasReactTarget = false;
+        currentBuildObject = null;
+        removeTarget = null;
+        moveTarget = null;
+        hasBuildBounds = false;
+        currentBuildGroup.Clear();
+    }
+    private void NotifySequenceFinished()
+    {
+        SequenceFinished?.Invoke();
+    }
+
+    // ---------------------------------------------------------------------
+    // Coroutine Stop Helpers
+    // ---------------------------------------------------------------------
+
+    private void StopAllSequences()
+    {
+        StopBuildRoutine();
+        StopRemoveRoutine();
+        StopCarryRoutine();
     }
 
     private void StopBuildRoutine()

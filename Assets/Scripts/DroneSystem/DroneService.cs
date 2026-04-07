@@ -1,4 +1,5 @@
-using System;
+﻿using System;
+using System.Collections.Generic; // ⭐ ADD THIS
 using UnityEngine;
 
 public sealed class DroneService
@@ -45,6 +46,15 @@ public sealed class DroneService
             return;
 
         controller.PlayBuild(target);
+    }
+
+    // ⭐⭐⭐ ADD THIS FUNCTION ⭐⭐⭐
+    public void PlayBuildGroup(List<GameObject> targets)
+    {
+        if (controller == null || targets == null || targets.Count == 0)
+            return;
+
+        controller.PlayBuildGroup(targets);
     }
 
     public void PlayBuildAt(Vector3 worldPos)

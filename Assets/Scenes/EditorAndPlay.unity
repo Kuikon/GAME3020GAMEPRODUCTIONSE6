@@ -7325,6 +7325,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Room
       objectReference: {fileID: 0}
+    - target: {fileID: 4729448186283841172, guid: 3e784b016a91bb546b456943f016f41c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 2.409
+      objectReference: {fileID: 0}
+    - target: {fileID: 4729448186283841172, guid: 3e784b016a91bb546b456943f016f41c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.975
+      objectReference: {fileID: 0}
     - target: {fileID: 5478671817008621874, guid: 3e784b016a91bb546b456943f016f41c, type: 3}
       propertyPath: m_LocalPosition.x
       value: -256.4
@@ -62455,7 +62463,7 @@ MonoBehaviour:
   removeMoveLerpSpeed: 50
   carryMoveLerpSpeed: 20
   buildDuration: 1
-  carryCommitFadeDuration: 0.1
+  carryCommitFadeDuration: 0.6
   arrivalDistance: 0.08
   maxApproachTime: 1.5
   laserStartPoint: {fileID: 911648785}

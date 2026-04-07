@@ -60,9 +60,6 @@ public sealed class BuildPlacementService
         context.Preview.SetValid(canPlace);
     }
 
-   
-
-    // 予約段階
     public bool TryCreatePlacementRequest(
         out Vector3Int originCell,
         out ObjectData data,
@@ -123,7 +120,6 @@ public sealed class BuildPlacementService
                 return false;
             }
 
-            // 1回目クリック: ライン開始点だけ予約するのではなく、今まで通り開始だけして終了
             if (!state.HasLineStart)
             {
                 state.BeginLine(hoverCell);
@@ -144,9 +140,6 @@ public sealed class BuildPlacementService
                 return false;
             }
 
-            // BuildApplicationService が単一セル前提なので、
-            // ここでは line の開始セルを返すだけにせず、
-            // line は TryPlaceReserved 側で再計算するため hoverCell を返しておく
             originCell = hoverCell;
             return true;
         }
@@ -155,7 +148,6 @@ public sealed class BuildPlacementService
         return false;
     }
 
-    // 確定段階
     public bool TryPlaceReserved(
         Vector3Int originCell,
         ObjectData data,
@@ -237,15 +229,39 @@ public sealed class BuildPlacementService
                 return false;
             }
 
-            composite.Add(new PlaceCommand(context, lineCells[i], data, rotation,state.SelectedColor));
+            composite.Add(new PlaceCommand(
+                context,
+                lineCells[i],
+                data,
+                rotation,
+                state.SelectedColor));
         }
 
-        bool ok = context.History.Do(composite, debugLogsOverride);
+        bool ok = context.History.Do(composite, debugLogsOverride, playEffects: false);
+
+        if (ok && context.Drone != null)
+        {
+            List<GameObject> spawnedObjects = new List<GameObject>();
+
+            for (int i = 0; i < composite.Commands.Count; i++)
+            {
+                if (composite.Commands[i] is PlaceCommand place && place.SpawnedObject != null)
+                    spawnedObjects.Add(place.SpawnedObject);
+            }
+
+            if (spawnedObjects.Count > 0)
+                context.Drone.PlayBuildGroup(spawnedObjects);
+        }
+
         state.CancelLine();
         return ok;
     }
 
-    private void UpdateLinePreview(ObjectData data, Quaternion rotation, Vector3Int rotatedSize, Vector3Int hoverCell)
+    private void UpdateLinePreview(
+        ObjectData data,
+        Quaternion rotation,
+        Vector3Int rotatedSize,
+        Vector3Int hoverCell)
     {
         if (!context.Solver.TryGetLineCellsOrthogonal(
                 state.LineStartCell,
@@ -266,7 +282,12 @@ public sealed class BuildPlacementService
         bool allValid = true;
         for (int i = 0; i < lineCells.Count; i++)
         {
-            if (!context.Rules.CanPlaceObject(data, context.Database, lineCells[i], rotatedSize, out _))
+            if (!context.Rules.CanPlaceObject(
+                    data,
+                    context.Database,
+                    lineCells[i],
+                    rotatedSize,
+                    out _))
             {
                 allValid = false;
                 break;
@@ -322,7 +343,7 @@ public sealed class BuildPlacementService
 
         return context.Database.TryGetByID(state.SelectedObjectID, out data)
             && data != null
-           && data.GetPrefab(state.SelectedColor) != null;
+            && data.GetPrefab(state.SelectedColor) != null;
     }
 
     private void HidePreviewAndIdleDrone()
@@ -332,10 +353,12 @@ public sealed class BuildPlacementService
         if (context.Drone != null)
             context.Drone.SetIdle();
     }
+
     private void HidePreviewOnly()
     {
         context?.Preview?.Clear();
     }
+
     private void Log(string msg, bool enabled)
     {
         if (enabled && !string.IsNullOrEmpty(msg))

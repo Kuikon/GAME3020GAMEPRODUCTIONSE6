@@ -58,17 +58,22 @@ public sealed class RemoveCommand : IBuildCommand
 
         context.Rules.RemoveObjectCells(removedOriginCell, removedSize);
 
+        GameObject target = removedObject;
+
         if (playEffects)
         {
-            GameObject target = removedObject;
+            context.Drone?.PlayRemove(target != null ? target.transform : null);
+
             BuildEffectUtility.PlayDestroyEffect(target, () =>
             {
-                Object.Destroy(target);
+                if (target != null)
+                    Object.Destroy(target);
             });
         }
         else
         {
-            Object.Destroy(removedObject);
+            if (target != null)
+                Object.Destroy(target);
         }
 
         if (debugLogs)
@@ -76,7 +81,6 @@ public sealed class RemoveCommand : IBuildCommand
 
         return true;
     }
-
     public void Undo(bool debugLogs = false, bool playEffects = true)
     {
         if (context == null || removedData == null)

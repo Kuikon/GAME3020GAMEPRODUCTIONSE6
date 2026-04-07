@@ -88,8 +88,10 @@ public sealed class PlaceCommand : IBuildCommand
 
         if (playEffects)
         {
+            context.Drone?.PlayRemove(target.transform);
             BuildEffectUtility.PlayDestroyEffect(target, () =>
             {
+
                 Object.Destroy(target);
             });
         }

@@ -6,6 +6,9 @@ public sealed class CompositeCommand : IBuildCommand
 
     public string Name { get; }
 
+    // added
+    public IReadOnlyList<IBuildCommand> Commands => commands;
+
     public CompositeCommand(string name)
     {
         Name = name;

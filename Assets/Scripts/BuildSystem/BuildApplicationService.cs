@@ -12,13 +12,15 @@ public sealed class BuildApplicationService
 
     private bool operationPending;
 
-
     private Vector3Int pendingPlaceCell;
     private ObjectData pendingPlaceData;
     private Quaternion pendingPlaceRotation;
     private bool pendingPlace;
     private bool pendingRemove;
     private BlockInstance pendingRemoveTarget;
+
+    private bool pendingUndo;
+    private bool pendingRedo;
 
     public BuildApplicationService(BuildContext context, BuildState state, bool debugLogs = false)
     {
@@ -66,14 +68,10 @@ public sealed class BuildApplicationService
     public bool RequestPlace()
     {
         if (operationPending)
-        {
             return false;
-        }
 
         if (context.Drone != null && (context.Drone.IsBusy || context.Drone.IsCarrying))
-        {
             return false;
-        }
 
         if (!placementService.TryCreatePlacementRequest(
             out var originCell,
@@ -85,12 +83,12 @@ public sealed class BuildApplicationService
         }
 
         if (data == null)
-        {
             return false;
-        }
 
         pendingPlace = true;
         pendingRemove = false;
+        pendingUndo = false;
+        pendingRedo = false;
         operationPending = true;
 
         pendingPlaceCell = originCell;
@@ -113,27 +111,21 @@ public sealed class BuildApplicationService
     public bool RequestRemove()
     {
         if (operationPending)
-        {
             return false;
-        }
 
         if (context.Drone != null && (context.Drone.IsBusy || context.Drone.IsCarrying))
-        {
             return false;
-        }
 
         if (!removeService.TryCreateRemoveRequest(out var targetBlock, debugLogs))
-        {
             return false;
-        }
 
         if (targetBlock == null)
-        {
             return false;
-        }
 
         pendingPlace = false;
         pendingRemove = true;
+        pendingUndo = false;
+        pendingRedo = false;
         operationPending = true;
 
         pendingRemoveTarget = targetBlock;
@@ -153,9 +145,7 @@ public sealed class BuildApplicationService
     public bool Move()
     {
         if (operationPending)
-        {
             return false;
-        }
 
         bool ok = moveService.HandleMove();
         RefreshPreview();
@@ -171,14 +161,17 @@ public sealed class BuildApplicationService
     public void Undo()
     {
         if (operationPending)
-        {
             return;
-        }
 
         if (context.Drone != null && (context.Drone.IsBusy || context.Drone.IsCarrying))
-        {
             return;
-        }
+
+        IBuildCommand cmd = context.History.PeekUndo();
+        if (cmd == null)
+            return;
+
+        if (TryStartAnimatedUndo(cmd))
+            return;
 
         context.History.Undo(debugLogs, playEffects: true);
         RefreshPreview();
@@ -187,17 +180,70 @@ public sealed class BuildApplicationService
     public void Redo()
     {
         if (operationPending)
-        {
             return;
-        }
 
         if (context.Drone != null && (context.Drone.IsBusy || context.Drone.IsCarrying))
-        {
             return;
-        }
+
+        IBuildCommand cmd = context.History.PeekRedo();
+        if (cmd == null)
+            return;
+
+        if (TryStartAnimatedRedo(cmd))
+            return;
 
         context.History.Redo(debugLogs, playEffects: true);
         RefreshPreview();
+    }
+
+    private bool TryStartAnimatedUndo(IBuildCommand cmd)
+    {
+        if (context.Drone == null)
+            return false;
+
+        if (cmd is MoveCommand moveCmd)
+        {
+            BlockInstance block = moveCmd.TargetBlock;
+            if (block == null)
+                return false;
+
+            operationPending = true;
+            pendingUndo = true;
+            pendingRedo = false;
+            pendingPlace = false;
+            pendingRemove = false;
+
+            context.Drone.BeginCarry(block.transform);
+            context.Drone.CommitCarry(block.transform);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryStartAnimatedRedo(IBuildCommand cmd)
+    {
+        if (context.Drone == null)
+            return false;
+
+        if (cmd is MoveCommand moveCmd)
+        {
+            BlockInstance block = moveCmd.TargetBlock;
+            if (block == null)
+                return false;
+
+            operationPending = true;
+            pendingRedo = true;
+            pendingUndo = false;
+            pendingPlace = false;
+            pendingRemove = false;
+
+            context.Drone.BeginCarry(block.transform);
+            context.Drone.CommitCarry(block.transform);
+            return true;
+        }
+
+        return false;
     }
 
     private void OnDroneSequenceFinished()
@@ -217,17 +263,28 @@ public sealed class BuildApplicationService
             return;
         }
 
+        if (pendingUndo)
+        {
+            CommitPendingUndo();
+            return;
+        }
+
+        if (pendingRedo)
+        {
+            CommitPendingRedo();
+            return;
+        }
+
         ClearPending();
     }
 
     private void CommitPendingPlace()
     {
-        bool success = placementService.TryPlaceReserved(
+        placementService.TryPlaceReserved(
             pendingPlaceCell,
             pendingPlaceData,
             pendingPlaceRotation,
             debugLogs);
-
 
         ClearPending();
         RefreshPreview();
@@ -235,12 +292,24 @@ public sealed class BuildApplicationService
 
     private void CommitPendingRemove()
     {
-        bool success = removeService.TryRemoveReserved(
+        removeService.TryRemoveReserved(
             pendingRemoveTarget,
             debugLogs);
 
-    
+        ClearPending();
+        RefreshPreview();
+    }
 
+    private void CommitPendingUndo()
+    {
+        context.History.Undo(debugLogs, playEffects: true);
+        ClearPending();
+        RefreshPreview();
+    }
+
+    private void CommitPendingRedo()
+    {
+        context.History.Redo(debugLogs, playEffects: true);
         ClearPending();
         RefreshPreview();
     }
@@ -256,5 +325,8 @@ public sealed class BuildApplicationService
 
         pendingRemove = false;
         pendingRemoveTarget = null;
+
+        pendingUndo = false;
+        pendingRedo = false;
     }
 }
