@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class BuildApplicationService
@@ -18,7 +19,20 @@ public sealed class BuildApplicationService
     private bool pendingPlace;
     private bool pendingRemove;
     private BlockInstance pendingRemoveTarget;
+    private bool pendingLine;
+    private List<Vector3Int> pendingLineCells = new List<Vector3Int>();
+    private ObjectData pendingLineData;
+    private Quaternion pendingLineRotation;
+    private bool pendingLineValid;
 
+    private bool pendingMove;
+    private BlockInstance pendingMoveTarget;
+    private Vector3 pendingMoveWorldPosition;
+    private bool pendingMoveValid;
+
+    private bool pendingRemovePreview;
+    private GameObject pendingRemoveObject;
+    private Vector3 pendingRemoveWorldPosition;
     private bool pendingUndo;
     private bool pendingRedo;
 
@@ -44,9 +58,54 @@ public sealed class BuildApplicationService
         if (context.Preview == null)
             return;
 
+        // 1) Locked single-place preview
+        if (pendingPlace && pendingPlaceData != null)
+        {
+            context.Preview.SetSelected(pendingPlaceData);
+            context.Preview.SetValid(true);
+            context.Preview.ShowSingle(
+                pendingPlaceCell,
+                pendingPlaceData.SizeXYZ,
+                pendingPlaceRotation);
+            return;
+        }
+
+        // 2) Locked line preview
+        if (pendingLine && pendingLineData != null && pendingLineCells != null && pendingLineCells.Count > 0)
+        {
+            context.Preview.SetSelected(pendingLineData);
+            context.Preview.SetValid(pendingLineValid);
+            context.Preview.ShowLine(
+                pendingLineCells,
+                pendingLineData.SizeXYZ,
+                pendingLineRotation);
+            return;
+        }
+
+        // 3) Locked move preview
+        if (pendingMove && pendingMoveTarget != null)
+        {
+            context.Preview.SetValid(pendingMoveValid);
+            context.Preview.ShowMovePreview(
+                pendingMoveTarget.gameObject,
+                pendingMoveWorldPosition);
+            return;
+        }
+
+        // 4) Locked remove preview
+        if (pendingRemovePreview && pendingRemoveObject != null)
+        {
+            context.Preview.SetValid(false);
+            context.Preview.ShowMovePreview(
+                pendingRemoveObject,
+                pendingRemoveWorldPosition);
+            return;
+        }
+
         if (placementService == null)
             return;
 
+        // Normal live mouse-follow preview
         placementService.UpdatePreview();
     }
 
@@ -85,15 +144,56 @@ public sealed class BuildApplicationService
         if (data == null)
             return false;
 
-        pendingPlace = true;
+        // clear all preview-pending modes first
+        pendingPlace = false;
+        pendingLine = false;
+        pendingMove = false;
         pendingRemove = false;
+        pendingRemovePreview = false;
         pendingUndo = false;
         pendingRedo = false;
         operationPending = true;
 
-        pendingPlaceCell = originCell;
-        pendingPlaceData = data;
-        pendingPlaceRotation = rotation;
+        // Single placement
+        if (state.PlaceTool == BuildTool.Single)
+        {
+            pendingPlace = true;
+            pendingPlaceCell = originCell;
+            pendingPlaceData = data;
+            pendingPlaceRotation = rotation;
+        }
+        // Line placement
+        else if (state.PlaceTool == BuildTool.Line)
+        {
+            Vector3Int rotatedSize = context.Solver.GetRotatedSize(data.SizeXYZ, rotation);
+
+            if (!state.HasLineStart ||
+                !context.Solver.TryGetLineCellsOrthogonal(
+                    state.LineStartCell,
+                    originCell,
+                    rotatedSize,
+                    out List<Vector3Int> lineCells) ||
+                lineCells == null ||
+                lineCells.Count == 0)
+            {
+                ClearPending();
+                return false;
+            }
+
+            // line preview lock
+            pendingLine = true;
+            pendingLineCells.Clear();
+            pendingLineCells.AddRange(lineCells);
+            pendingLineData = data;
+            pendingLineRotation = rotation;
+            pendingLineValid = true;
+
+            // IMPORTANT: still use place commit pipeline
+            pendingPlace = true;
+            pendingPlaceCell = originCell;
+            pendingPlaceData = data;
+            pendingPlaceRotation = rotation;
+        }
 
         if (context.Drone != null)
         {
@@ -123,12 +223,17 @@ public sealed class BuildApplicationService
             return false;
 
         pendingPlace = false;
+        pendingLine = false;
+        pendingMove = false;
         pendingRemove = true;
+        pendingRemovePreview = true;
         pendingUndo = false;
         pendingRedo = false;
         operationPending = true;
 
         pendingRemoveTarget = targetBlock;
+        pendingRemoveObject = targetBlock.gameObject;
+        pendingRemoveWorldPosition = targetBlock.transform.position;
 
         if (context.Drone != null)
         {
@@ -147,9 +252,49 @@ public sealed class BuildApplicationService
         if (operationPending)
             return false;
 
-        bool ok = moveService.HandleMove();
+        // First click: select move target
+        if (!state.HasMoveTarget)
+        {
+            bool selected = moveService.HandleMove();
+            RefreshPreview();
+            return selected;
+        }
+
+        // Second click: commit move with locked preview
+        if (!moveService.TryGetMovePreviewSnapshot(
+            out BlockInstance targetBlock,
+            out Vector3Int toCell,
+            out Vector3 worldPos,
+            out bool canPlace))
+        {
+            RefreshPreview();
+            return false;
+        }
+
+        if (!canPlace || targetBlock == null)
+        {
+            RefreshPreview();
+            return false;
+        }
+
+        pendingMove = true;
+        pendingMoveTarget = targetBlock;
+        pendingMoveWorldPosition = worldPos;
+        pendingMoveValid = true;
+        operationPending = true;
+
+        // execute real move now
+        bool ok = moveService.TryCommitMove();
+
+        if (!ok)
+        {
+            ClearPending();
+            RefreshPreview();
+            return false;
+        }
+
         RefreshPreview();
-        return ok;
+        return true;
     }
 
     public void CancelMove()
@@ -323,8 +468,23 @@ public sealed class BuildApplicationService
         pendingPlaceData = null;
         pendingPlaceRotation = Quaternion.identity;
 
+        pendingLine = false;
+        pendingLineCells.Clear();
+        pendingLineData = null;
+        pendingLineRotation = Quaternion.identity;
+        pendingLineValid = true;
+
+        pendingMove = false;
+        pendingMoveTarget = null;
+        pendingMoveWorldPosition = default;
+        pendingMoveValid = true;
+
         pendingRemove = false;
         pendingRemoveTarget = null;
+
+        pendingRemovePreview = false;
+        pendingRemoveObject = null;
+        pendingRemoveWorldPosition = default;
 
         pendingUndo = false;
         pendingRedo = false;

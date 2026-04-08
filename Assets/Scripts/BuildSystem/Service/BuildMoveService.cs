@@ -160,7 +160,27 @@ public sealed class BuildMoveService
         state.CancelMove();
         state.PlaceTool = BuildTool.Single;
     }
+    public bool TryGetMovePreviewSnapshot(
+    out BlockInstance targetBlock,
+    out Vector3Int toCell,
+    out Vector3 worldPos,
+    out bool canPlace)
+    {
+        targetBlock = null;
+        toCell = default;
+        worldPos = default;
+        canPlace = false;
 
+        if (!TryGetCurrentMoveTarget(out targetBlock))
+            return false;
+
+        if (!TryGetMoveDestination(targetBlock, out toCell))
+            return false;
+
+        canPlace = context.Rules.CanPlaceIgnoring(targetBlock, toCell, targetBlock.SizeXYZ, out _);
+        worldPos = context.Grid.BoxToWorldCenter(toCell, targetBlock.SizeXYZ);
+        return true;
+    }
     private void Log(string message)
     {
         if (debugLogs && !string.IsNullOrEmpty(message))
