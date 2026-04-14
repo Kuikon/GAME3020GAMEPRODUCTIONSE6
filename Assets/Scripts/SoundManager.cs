@@ -168,7 +168,11 @@ public class SESoundData
         Jump,
         Land,
         Footstep,
-        Dash
+        Dash,
+        Place,
+        Remove,
+        Pick,
+        Drop
     }
 
     public SE se;

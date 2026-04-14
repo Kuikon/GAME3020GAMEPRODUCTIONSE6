@@ -234,7 +234,7 @@ public class DroneCompanionController : MonoBehaviour
             return;
 
         StopAllSequences();
-
+        SoundManager.Instance.PlaySE(SESoundData.SE.Pick);
         hasBuildBounds = false;
         currentBuildObject = null;
         removeTarget = null;
@@ -362,7 +362,7 @@ public class DroneCompanionController : MonoBehaviour
             NotifySequenceFinished();
             yield break;
         }
-
+        SoundManager.Instance.PlaySE(SESoundData.SE.Place);
         SetRenderersVisible(currentBuildObject, true);
         PlayBuildEffect(currentBuildObject);
 
@@ -389,6 +389,7 @@ public class DroneCompanionController : MonoBehaviour
             NotifySequenceFinished();
             yield break;
         }
+        SoundManager.Instance.PlaySE(SESoundData.SE.Place);
 
         for (int i = 0; i < currentBuildGroup.Count; i++)
         {
@@ -438,6 +439,7 @@ public class DroneCompanionController : MonoBehaviour
     private IEnumerator CoRemoveSequence()
     {
         yield return CoMoveUntilArrived(removeTarget != null ? removeTarget.gameObject : null, removeMoveLerpSpeed);
+        SoundManager.Instance.PlaySE(SESoundData.SE.Remove);
 
         if (removeTarget == null)
         {
@@ -477,7 +479,7 @@ public class DroneCompanionController : MonoBehaviour
         currentState = DroneState.Move;
         laserVisible = true;
         ShowAllLasersImmediate();
-
+        SoundManager.Instance.PlaySE(SESoundData.SE.Drop);
         float t = 0f;
         while (t < carryCommitFadeDuration)
         {

@@ -249,4 +249,17 @@ public class RobotControllerCommander : MonoBehaviour
             rb.angularVelocity = Vector3.zero;
         }
     }
+    public void FaceTargetInstant(Transform target)
+    {
+        if (target == null)
+            return;
+
+        Vector3 toTarget = target.position - transform.position;
+        toTarget.y = 0f;
+
+        if (toTarget.sqrMagnitude < 0.0001f)
+            return;
+
+        transform.rotation = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
+    }
 }

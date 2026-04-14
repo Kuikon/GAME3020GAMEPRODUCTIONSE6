@@ -28,13 +28,12 @@ public class GameModeManager : MonoBehaviour
     [SerializeField] private FreeFlyCamera editFly;
 
     [Header("Start")]
-    [SerializeField] private Mode startMode = Mode.Edit;
     [SerializeField] private bool disableCameraLookInEdit = true;
 
     [Header("Placed Objects")]
     [SerializeField] private ObjectsDatabaseSO database;
     [SerializeField] private Transform placedRoot;
-
+    [SerializeField] private BoyEditMover boyMover;
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
@@ -119,7 +118,11 @@ public class GameModeManager : MonoBehaviour
             if (!isPlay)
                 robot.StopImmediately();
         }
-
+        if (boyMover != null)
+        {
+            boyMover.SetGameModeLookTarget(robot != null ? robot.transform : null);
+            boyMover.SetGameModeLookEnabled(isPlay);
+        }
         ApplyPlacedColliderMode(isPlay);
 
         if (cameraOrbit != null)
@@ -144,7 +147,10 @@ public class GameModeManager : MonoBehaviour
 
         Cursor.visible = !isPlay;
         Cursor.lockState = isPlay ? CursorLockMode.Locked : CursorLockMode.None;
-
+        if (buildController is BuildController bc)
+        {
+            bc.CancelCurrentOperation(); // clears preview + drone
+        }
         if (debugLogs)
         {
             Debug.Log($"[GameModeManager] Mode = {mode}");

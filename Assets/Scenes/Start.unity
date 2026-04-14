@@ -277,6 +277,7 @@ GameObject:
   m_Component:
   - component: {fileID: 402070746}
   - component: {fileID: 402070745}
+  - component: {fileID: 402070747}
   m_Layer: 0
   m_Name: SoundManager
   m_TagString: Untagged
@@ -302,7 +303,7 @@ MonoBehaviour:
   bgmSoundDatas: []
   seSoundDatas:
   - se: 0
-    audioClip: {fileID: 8300000, guid: 411c583d599d6e240acee50ddce3b2ec, type: 3}
+    audioClip: {fileID: 8300000, guid: ab7f91aca6c1ed1428bab74888a3d595, type: 3}
     volume: 1
   - se: 1
     audioClip: {fileID: 8300000, guid: 5465c5007a95ac34cb9930dc29c34962, type: 3}
@@ -312,6 +313,18 @@ MonoBehaviour:
     volume: 0.998
   - se: 3
     audioClip: {fileID: 8300000, guid: 5e0165750324ec74da3df882d5854382, type: 3}
+    volume: 1
+  - se: 4
+    audioClip: {fileID: 8300000, guid: 9cead49f0dd381c44b40a30d5329c7e1, type: 3}
+    volume: 1
+  - se: 5
+    audioClip: {fileID: 8300000, guid: 3e18b680a7e23a84bbbf4b3a0b6d3e56, type: 3}
+    volume: 1
+  - se: 6
+    audioClip: {fileID: 8300000, guid: a31c129d11ce65d4daa37d30e53941ff, type: 3}
+    volume: 1
+  - se: 7
+    audioClip: {fileID: 8300000, guid: 686e2bfc2a539f142bef0416d730c039, type: 3}
     volume: 1
   masterVolume: 1
   bgmMasterVolume: 1
@@ -333,6 +346,14 @@ Transform:
   - {fileID: 754095395}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!81 &402070747
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 402070744}
+  m_Enabled: 1
 --- !u!1 &435384065
 GameObject:
   m_ObjectHideFlags: 0

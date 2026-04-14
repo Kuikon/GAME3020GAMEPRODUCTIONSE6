@@ -25,16 +25,16 @@ public class GoalTrigger : MonoBehaviour
             runtimeCoordinator = FindFirstObjectByType<LevelRuntimeCoordinator>();
     }
 
-    private void OnTriggerEnter(Collider other)
+    private void OnCollisionEnter(Collision collision)
     {
-        if (other == null)
+        if (collision == null)
             return;
 
-        if (!other.CompareTag(playerTag))
+        if (!collision.gameObject.CompareTag(playerTag))
             return;
 
         if (debugLogs)
-            Debug.Log($"[GoalTrigger] Player entered goal: {name}");
+            Debug.Log($"[GoalTrigger] Player hit goal: {name}");
 
         runtimeCoordinator?.HandleGoalReached();
     }

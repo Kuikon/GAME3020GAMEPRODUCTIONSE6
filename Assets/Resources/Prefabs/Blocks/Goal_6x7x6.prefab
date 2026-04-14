@@ -101,6 +101,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlockInstance
   <ObjectID>k__BackingField: 0
+  <Color>k__BackingField: 1
 --- !u!1 &218666608588560257
 GameObject:
   m_ObjectHideFlags: 0
@@ -409,7 +410,7 @@ MeshCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 5

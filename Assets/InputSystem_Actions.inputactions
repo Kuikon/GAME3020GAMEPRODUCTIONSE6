@@ -663,6 +663,15 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "TogglePalette",
+                    "type": "Button",
+                    "id": "58a1bdea-5b58-4988-86f3-ed3ba181d7bf",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -1193,6 +1202,17 @@
                     "action": "color4Action",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "9f652dc7-10f8-4af4-aae7-b3b908032ee0",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TogglePalette",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },
@@ -1362,7 +1382,7 @@
                 {
                     "name": "",
                     "id": "8cddb5a4-7c34-4678-99b3-902625d77cd3",
-                    "path": "<Mouse>/rightButton",
+                    "path": "<Keyboard>/q",
                     "interactions": "",
                     "processors": "",
                     "groups": "",

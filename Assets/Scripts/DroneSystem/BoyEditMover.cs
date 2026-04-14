@@ -6,12 +6,12 @@ using UnityEngine.InputSystem;
 public class BoyEditMover : MonoBehaviour
 {
     [SerializeField] private Animator animator;
+
     [Header("Input")]
     [SerializeField] private InputActionAsset inputActions;
     [SerializeField] private string actionMapName = "Build";
-
-    [SerializeField] private string moveActionName = "Move";       // Vector2
-    [SerializeField] private string boostActionName = "Boost";     // Button
+    [SerializeField] private string moveActionName = "Move";
+    [SerializeField] private string boostActionName = "Boost";
 
     [Header("Move")]
     [SerializeField] private float moveSpeed = 4f;
@@ -20,6 +20,10 @@ public class BoyEditMover : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private Transform cameraYawReference;
+
+    [Header("Game Mode Look")]
+    [SerializeField] private Transform lookTargetInGameMode;
+    [SerializeField] private bool alwaysFaceTargetInGameMode = true;
 
     [Header("Physics")]
     [SerializeField] private Rigidbody rb;
@@ -30,6 +34,7 @@ public class BoyEditMover : MonoBehaviour
     private InputAction boostAction;
 
     private bool inputEnabled = true;
+    private bool gameModeLookEnabled = false;
 
     private Vector3 desiredVelocity;
     private float facingYaw;
@@ -110,12 +115,23 @@ public class BoyEditMover : MonoBehaviour
         facingYaw = yaw;
     }
 
+    public void SetGameModeLookTarget(Transform target)
+    {
+        lookTargetInGameMode = target;
+    }
+
+    public void SetGameModeLookEnabled(bool enabled)
+    {
+        gameModeLookEnabled = enabled;
+    }
+
     private void Update()
     {
         if (!inputEnabled)
             return;
-        UpdateAnimation();
+
         UpdateDesiredVelocity();
+        UpdateAnimation();
     }
 
     private void FixedUpdate()
@@ -129,37 +145,51 @@ public class BoyEditMover : MonoBehaviour
 
     private void ApplyRotation()
     {
-        Vector2 move = moveAction.ReadValue<Vector2>();
-
-        if (move.sqrMagnitude > 0.01f)
+        if (gameModeLookEnabled && alwaysFaceTargetInGameMode && lookTargetInGameMode != null)
         {
-            Vector3 forward;
-            Vector3 right;
+            Vector3 toTarget = lookTargetInGameMode.position - transform.position;
+            toTarget.y = 0f;
 
-            if (cameraYawReference != null)
+            if (toTarget.sqrMagnitude > 0.001f)
             {
-                forward = cameraYawReference.forward;
-                right = cameraYawReference.right;
-
-                forward.y = 0f;
-                right.y = 0f;
-
-                forward.Normalize();
-                right.Normalize();
+                toTarget.Normalize();
+                facingYaw = Quaternion.LookRotation(toTarget, Vector3.up).eulerAngles.y;
             }
-            else
-            {
-                Quaternion yawRot = Quaternion.Euler(0f, facingYaw, 0f);
-                forward = yawRot * Vector3.forward;
-                right = yawRot * Vector3.right;
-            }
+        }
+        else
+        {
+            Vector2 move = moveAction.ReadValue<Vector2>();
 
-            Vector3 moveDir = forward * move.y + right * move.x;
-
-            if (moveDir.sqrMagnitude > 0.001f)
+            if (move.sqrMagnitude > 0.01f)
             {
-                moveDir.Normalize();
-                facingYaw = Quaternion.LookRotation(moveDir, Vector3.up).eulerAngles.y;
+                Vector3 forward;
+                Vector3 right;
+
+                if (cameraYawReference != null)
+                {
+                    forward = cameraYawReference.forward;
+                    right = cameraYawReference.right;
+
+                    forward.y = 0f;
+                    right.y = 0f;
+
+                    forward.Normalize();
+                    right.Normalize();
+                }
+                else
+                {
+                    Quaternion yawRot = Quaternion.Euler(0f, facingYaw, 0f);
+                    forward = yawRot * Vector3.forward;
+                    right = yawRot * Vector3.right;
+                }
+
+                Vector3 moveDir = forward * move.y + right * move.x;
+
+                if (moveDir.sqrMagnitude > 0.001f)
+                {
+                    moveDir.Normalize();
+                    facingYaw = Quaternion.LookRotation(moveDir, Vector3.up).eulerAngles.y;
+                }
             }
         }
 
@@ -221,6 +251,7 @@ public class BoyEditMover : MonoBehaviour
 
         rb.linearVelocity = velocity;
     }
+
     public Vector2 GetMoveInput()
     {
         if (moveAction == null)
@@ -228,13 +259,13 @@ public class BoyEditMover : MonoBehaviour
 
         return moveAction.ReadValue<Vector2>();
     }
+
     private void UpdateAnimation()
     {
         if (animator == null)
             return;
 
         float speed = new Vector3(desiredVelocity.x, 0f, desiredVelocity.z).magnitude;
-
         animator.SetFloat("Speed", speed);
     }
 }
