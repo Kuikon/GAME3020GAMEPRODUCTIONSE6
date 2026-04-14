@@ -65,4 +65,15 @@ public class RobotContext
     public bool JumpCutRequestedThisFrame;
     public Transform GroundPoint;
     public float GroundCheckRadius;
+
+    // Sound
+    public float FootstepTimer;
+    public float WalkFootstepInterval = 0.4f;
+    public float RunFootstepInterval = 0.28f;
+    public float MinFootstepInterval = 0.22f;
+    public float MaxFootstepInterval = 0.5f;
+    public bool DashStartedThisFrame;
+    public bool IsDashing;
+    public float FootstepStartDelay = 0.08f;
+    public float FootstepAfterLandDelay = 0.12f;
 }

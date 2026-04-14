@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public sealed class RobotOutputLogic
 {
@@ -8,7 +8,12 @@ public sealed class RobotOutputLogic
         ApplyRotation(ctx);
         ApplyJump(ctx);
         ApplyBetterGravity(ctx);
+
+        PlayLandingSound(ctx);
+        //PlayFootstepSound(ctx);
+        PlayDashSound(ctx);
         UpdateAnimator(ctx);
+        ctx.WasGrounded = ctx.IsGrounded;
     }
 
     private void ApplyHorizontalMovement(RobotContext ctx)
@@ -48,6 +53,8 @@ public sealed class RobotOutputLogic
             ctx.IsGrounded = false;
             if (ctx.Animator)
                 ctx.Animator.SetTrigger("Jump");
+            if (SoundManager.Instance != null)
+                SoundManager.Instance.PlaySE(SESoundData.SE.Jump);
         }
 
         if (ctx.JumpCutRequestedThisFrame)
@@ -76,7 +83,64 @@ public sealed class RobotOutputLogic
 
         ctx.Rb.linearVelocity = v;
     }
+    private void PlayLandingSound(RobotContext ctx)
+    {
+        if (!ctx.WasGrounded && ctx.IsGrounded)
+        {
+            if (SoundManager.Instance != null)
+                SoundManager.Instance.PlaySE(SESoundData.SE.Land);
 
+            // prevent instant footstep right after landing
+            ctx.FootstepTimer = ctx.FootstepAfterLandDelay;
+        }
+    }
+    private void PlayFootstepSound(RobotContext ctx)
+    {
+        if (ctx.IsDashing)
+            return;
+
+        Vector3 v = ctx.Rb.linearVelocity;
+        float horizontalSpeed = new Vector3(v.x, 0f, v.z).magnitude;
+
+        bool isMovingOnGround = ctx.IsGrounded && horizontalSpeed > 0.2f;
+
+        if (!isMovingOnGround)
+        {
+            // do not make it 0, or it plays instantly next time
+            ctx.FootstepTimer = ctx.FootstepStartDelay;
+            return;
+        }
+
+        ctx.FootstepTimer -= ctx.Dt;
+
+        if (ctx.FootstepTimer > 0f)
+            return;
+
+        SoundManager.Instance?.PlaySE(SESoundData.SE.Footstep);
+
+        float maxSpeed = Mathf.Max(ctx.MoveSpeed, ctx.RunSpeed);
+        float speed01 = Mathf.InverseLerp(0f, maxSpeed, horizontalSpeed);
+
+        float interval = Mathf.Lerp(
+            ctx.MaxFootstepInterval,
+            ctx.MinFootstepInterval,
+            speed01
+        );
+
+        // extra safety clamp
+        ctx.FootstepTimer = Mathf.Clamp(
+            interval,
+            ctx.MinFootstepInterval,
+            ctx.MaxFootstepInterval
+        );
+    }
+    private void PlayDashSound(RobotContext ctx)
+    {
+        if (ctx.DashStartedThisFrame)
+        {
+            SoundManager.Instance?.PlaySE(SESoundData.SE.Dash);
+        }
+    }
     private void UpdateAnimator(RobotContext ctx)
     {
         if (!ctx.Animator) return;
