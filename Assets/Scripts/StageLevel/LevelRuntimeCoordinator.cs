@@ -270,7 +270,23 @@ public class LevelRuntimeCoordinator : MonoBehaviour
 
         return true;
     }
+    public Vector3 GetStartSpawnPosition()
+    {
+        if (ruleService == null)
+        {
+            Debug.LogWarning("[LevelRuntimeCoordinator] ruleService is null.");
+            return Vector3.zero;
+        }
 
+        BlockInstance startBlock = ruleService.GetStartBlock();
+        if (startBlock == null)
+        {
+            Debug.LogWarning("[LevelRuntimeCoordinator] Start block not found.");
+            return Vector3.zero;
+        }
+
+        return CalculateSafeSpawnPosition(startBlock, playerTransform);
+    }
     private Vector3 CalculateSafeSpawnPosition(BlockInstance startBlock, Transform player)
     {
         float startTopY = startBlock.transform.position.y;

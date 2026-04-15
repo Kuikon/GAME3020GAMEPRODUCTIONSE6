@@ -33,7 +33,9 @@ public class RobotControllerCommander : MonoBehaviour
     public string deathTriggerName = "Die";
     [SerializeField] private float respawnDelay = 1.2f;
     private bool isDead;
-
+    [Header("Drone Respawn")]
+    [SerializeField] private DroneRespawnCarrier respawnDrone;
+  
     [Header("Animation")]
     public Animator animator;
 
@@ -66,6 +68,8 @@ public class RobotControllerCommander : MonoBehaviour
 
         if (runtimeCoordinator == null)
             runtimeCoordinator = FindFirstObjectByType<LevelRuntimeCoordinator>();
+        if (respawnDrone == null)
+            respawnDrone = FindFirstObjectByType<DroneRespawnCarrier>();
     }
 
     private void OnEnable()
@@ -179,17 +183,31 @@ public class RobotControllerCommander : MonoBehaviour
     {
         yield return new WaitForSeconds(respawnDelay);
 
-        if (runtimeCoordinator != null)
+        if (respawnDrone != null && runtimeCoordinator != null)
         {
+            Vector3 spawnPos = runtimeCoordinator.GetStartSpawnPosition();
+
+            bool finished = false;
+
+            respawnDrone.StartCarryRespawn(this, spawnPos, () =>
+            {
+                finished = true;
+            });
+
+            while (!finished)
+                yield return null;
+        }
+        else if (runtimeCoordinator != null)
+        {
+            // fallback: old teleport respawn
             runtimeCoordinator.MovePlayerToStart();
         }
         else
         {
-            Debug.LogWarning("[RobotControllerCommander] LevelRuntimeCoordinator Ç™å©Ç¬Ç©ÇËÇ‹ÇπÇÒÅB");
+            Debug.LogWarning("[RobotControllerCommander] No respawn drone and no runtime coordinator found.");
         }
 
         ResetDeadState();
-
         respawnRoutine = null;
     }
 

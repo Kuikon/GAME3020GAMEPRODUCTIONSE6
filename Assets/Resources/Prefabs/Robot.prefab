@@ -884,6 +884,95 @@ Transform:
   - {fileID: 2188918196614621282}
   m_Father: {fileID: 8765453697504381608}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &3907915781029623302
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2437363718148163417}
+  - component: {fileID: 4310006258487934817}
+  - component: {fileID: 7746671053629454625}
+  m_Layer: 3
+  m_Name: Sphere
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2437363718148163417
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3907915781029623302}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.21, z: 0}
+  m_LocalScale: {x: 3, y: 3, z: 3}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1631437460550732716}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &4310006258487934817
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3907915781029623302}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &7746671053629454625
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3907915781029623302}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: d01704e61f664094895fcda0867554f9, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &3952967168419151396
 GameObject:
   m_ObjectHideFlags: 0
@@ -1167,6 +1256,7 @@ Transform:
   - {fileID: 2138207140916554580}
   - {fileID: 7155986629021575804}
   - {fileID: 5452256837826634920}
+  - {fileID: 2437363718148163417}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &567601982258029136
@@ -1255,25 +1345,27 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RobotControllerCommander
   cameraTransform: {fileID: 0}
   inputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  groundCheckSphere: {fileID: 216002439776464374}
   groundLayer:
     serializedVersion: 2
-    m_Bits: 768
-  groundCheckDistance: 0.3
-  groundPoint: {fileID: 5452256837826634920}
-  groundCheckRadius: 0.2
+    m_Bits: 256
   moveSpeed: 4
   runSpeed: 10
   rotateSpeed: 7
   groundAccel: 35
   airAccel: 12
-  jumpHeight: 1.8
+  jumpHeight: 2
   jumpBufferTime: 0.1
   coyoteTime: 0.1
   jumpCutMultiplier: 1
   fallGravityMultiplier: 2
   lowJumpGravityMultiplier: 5
+  deathTriggerName: Die
+  respawnDelay: 1.5
+  respawnDrone: {fileID: 0}
   animator: {fileID: 567601982258029136}
   conveyorStickTime: 0.1
+  runtimeCoordinator: {fileID: 0}
 --- !u!1 &7243993092378295735
 GameObject:
   m_ObjectHideFlags: 0
