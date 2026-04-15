@@ -13,8 +13,52 @@ MonoBehaviour:
   m_Name: ObjectDatabase SO
   m_EditorClassIdentifier: Assembly-CSharp::ObjectsDatabaseSO
   objectsData:
-  - <Name>k__BackingField: Platform
+  - <Name>k__BackingField: Platform(S)
     <ID>k__BackingField: 0
+    <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 2}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 1
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 6041072834817047848, guid: edfcbd05fd589ba4da057ae80f7d97e7, type: 3}
+    bluePrefab: {fileID: 0}
+    redPrefab: {fileID: 0}
+    yellowPrefab: {fileID: 0}
+    greenPrefab: {fileID: 0}
+  - <Name>k__BackingField: Platform(S)
+    <ID>k__BackingField: 1
+    <SizeXYZ>k__BackingField: {x: 2, y: 2, z: 2}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 1
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 1103149990667752953, guid: 6f16cd3b961d3a3498dec9ab3002001a, type: 3}
+    bluePrefab: {fileID: 0}
+    redPrefab: {fileID: 0}
+    yellowPrefab: {fileID: 0}
+    greenPrefab: {fileID: 0}
+  - <Name>k__BackingField: Platform(S)
+    <ID>k__BackingField: 2
+    <SizeXYZ>k__BackingField: {x: 2, y: 4, z: 2}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 1
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 4131686239007952286, guid: 8b8dfb2bdc28ac34293ca03ee7b1bc12, type: 3}
+    bluePrefab: {fileID: 4131686239007952286, guid: 8b8dfb2bdc28ac34293ca03ee7b1bc12, type: 3}
+    redPrefab: {fileID: 7650319097655050206, guid: e0b10c1cf06cfad408bd3306535105e2, type: 3}
+    yellowPrefab: {fileID: 899786178057476901, guid: 94fa52288190ec240b48596e902704f7, type: 3}
+    greenPrefab: {fileID: 7756164000354994353, guid: d71484d2de0e067459105b8fe21fddd0, type: 3}
+  - <Name>k__BackingField: Platform(L)
+    <ID>k__BackingField: 3
+    <SizeXYZ>k__BackingField: {x: 4, y: 1, z: 4}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 1
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 7257514276459184829, guid: 32d5ce668ab6b2e48a1f0b87efccfb23, type: 3}
+    bluePrefab: {fileID: 5993612924724047696, guid: 1bda544a6356c5344b902fc017707c42, type: 3}
+    redPrefab: {fileID: 5569881997422985128, guid: 8a4a40bea4e51724eb7b0290be6aa7ed, type: 3}
+    yellowPrefab: {fileID: 2261764568718557755, guid: ae98d6f446612fc438c93c84d291b5aa, type: 3}
+    greenPrefab: {fileID: 2333274547571807430, guid: 576a194a86e35b343ad3ddcccae54081, type: 3}
+  - <Name>k__BackingField: Platform(L)
+    <ID>k__BackingField: 4
     <SizeXYZ>k__BackingField: {x: 4, y: 2, z: 4}
     <IsBoxShape>k__BackingField: 1
     <Category>k__BackingField: 1
@@ -24,36 +68,47 @@ MonoBehaviour:
     redPrefab: {fileID: 5569881997422985128, guid: 8a4a40bea4e51724eb7b0290be6aa7ed, type: 3}
     yellowPrefab: {fileID: 2261764568718557755, guid: ae98d6f446612fc438c93c84d291b5aa, type: 3}
     greenPrefab: {fileID: 2333274547571807430, guid: 576a194a86e35b343ad3ddcccae54081, type: 3}
-  - <Name>k__BackingField: Mini Block
-    <ID>k__BackingField: 1
+  - <Name>k__BackingField: Platform(L)
+    <ID>k__BackingField: 5
+    <SizeXYZ>k__BackingField: {x: 4, y: 2, z: 4}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 1
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 5993612924724047696, guid: 1bda544a6356c5344b902fc017707c42, type: 3}
+    bluePrefab: {fileID: 5993612924724047696, guid: 1bda544a6356c5344b902fc017707c42, type: 3}
+    redPrefab: {fileID: 5569881997422985128, guid: 8a4a40bea4e51724eb7b0290be6aa7ed, type: 3}
+    yellowPrefab: {fileID: 2261764568718557755, guid: ae98d6f446612fc438c93c84d291b5aa, type: 3}
+    greenPrefab: {fileID: 2333274547571807430, guid: 576a194a86e35b343ad3ddcccae54081, type: 3}
+  - <Name>k__BackingField: Arrow Block
+    <ID>k__BackingField: 6
     <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 2}
     <IsBoxShape>k__BackingField: 1
     <Category>k__BackingField: 1
     <SpecialType>k__BackingField: 0
-    <Prefab>k__BackingField: {fileID: 5325131912288433340, guid: 3a19fae0c7a536844a5ed518807c392f, type: 3}
-    bluePrefab: {fileID: 0}
-    redPrefab: {fileID: 0}
+    <Prefab>k__BackingField: {fileID: 8274144093002858936, guid: 332367db956ff1b49badf8b19eb2940d, type: 3}
+    bluePrefab: {fileID: 8274144093002858936, guid: 332367db956ff1b49badf8b19eb2940d, type: 3}
+    redPrefab: {fileID: 6975954958897152210, guid: 8542cd082e79e6f4ba911495dcceec12, type: 3}
     yellowPrefab: {fileID: 5325131912288433340, guid: 3a19fae0c7a536844a5ed518807c392f, type: 3}
-    greenPrefab: {fileID: 0}
-  - <Name>k__BackingField: Start
-    <ID>k__BackingField: 2
-    <SizeXYZ>k__BackingField: {x: 6, y: 5, z: 6}
-    <IsBoxShape>k__BackingField: 0
-    <Category>k__BackingField: 4
-    <SpecialType>k__BackingField: 1
-    <Prefab>k__BackingField: {fileID: 8986416493928728895, guid: b8cb46852cf00f64cb1e160e179c4b4b, type: 3}
-    bluePrefab: {fileID: 8986416493928728895, guid: b8cb46852cf00f64cb1e160e179c4b4b, type: 3}
-    redPrefab: {fileID: 0}
-    yellowPrefab: {fileID: 0}
-    greenPrefab: {fileID: 0}
+    greenPrefab: {fileID: 4984159277429220611, guid: 8f83474d128735e4b9e32844d6bec47a, type: 3}
   - <Name>k__BackingField: Goal
-    <ID>k__BackingField: 3
+    <ID>k__BackingField: 7
     <SizeXYZ>k__BackingField: {x: 6, y: 7, z: 6}
     <IsBoxShape>k__BackingField: 0
     <Category>k__BackingField: 4
     <SpecialType>k__BackingField: 2
     <Prefab>k__BackingField: {fileID: 90094258057818800, guid: 107908fd45877174c9d9870fb78dbb17, type: 3}
     bluePrefab: {fileID: 0}
+    redPrefab: {fileID: 0}
+    yellowPrefab: {fileID: 0}
+    greenPrefab: {fileID: 0}
+  - <Name>k__BackingField: Start
+    <ID>k__BackingField: 8
+    <SizeXYZ>k__BackingField: {x: 6, y: 5, z: 6}
+    <IsBoxShape>k__BackingField: 0
+    <Category>k__BackingField: 4
+    <SpecialType>k__BackingField: 1
+    <Prefab>k__BackingField: {fileID: 8986416493928728895, guid: b8cb46852cf00f64cb1e160e179c4b4b, type: 3}
+    bluePrefab: {fileID: 8986416493928728895, guid: b8cb46852cf00f64cb1e160e179c4b4b, type: 3}
     redPrefab: {fileID: 0}
     yellowPrefab: {fileID: 0}
     greenPrefab: {fileID: 0}
