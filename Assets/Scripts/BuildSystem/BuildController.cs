@@ -159,13 +159,24 @@ public sealed class BuildController : MonoBehaviour
 
     public void SetTool(BuildTool tool)
     {
-        if (tool != BuildTool.Move)
+        if (state.PlaceTool == tool)
+            return;
+
+        // leave old tool cleanly
+        if (state.PlaceTool == BuildTool.Line)
+            state.CancelLine();
+
+        if (state.PlaceTool == BuildTool.Move || tool != BuildTool.Move)
             app?.CancelMove();
 
         state.PlaceTool = tool;
 
+        // enter new tool cleanly
         if (tool != BuildTool.Line)
             state.CancelLine();
+
+        if (debugLogs)
+            Debug.Log($"[BuildController] Tool changed to {state.PlaceTool}");
 
         app?.RefreshPreview();
     }
@@ -218,25 +229,20 @@ public sealed class BuildController : MonoBehaviour
             Debug.Log("[BuildController] CancelCurrentOperation called");
     }
 
+    // LMB only
     private void OnPlacePerformed(InputAction.CallbackContext _)
     {
-        if (app == null)
-            return;
-
-        if (!IsBuildEnabled)
-            return;
-
-        if (IsPointerOverUI())
+        if (app == null || !IsBuildEnabled || IsPointerOverUI())
             return;
 
         if (droneCompanion != null && droneCompanion.IsBusy)
-        {
-            if (debugLogs)
-                Debug.Log("[Build] Drone is busy. Placement blocked.");
             return;
-        }
 
-        app.Place();
+        if (state.PlaceTool == BuildTool.Move)
+            app.Move();
+        else
+            app.Place();
+
         app.RefreshPreview();
     }
 
@@ -273,9 +279,7 @@ public sealed class BuildController : MonoBehaviour
         if (IsPointerOverUI())
             return;
 
-        state.PlaceTool = BuildTool.Move;
-        app.Move();
-        app.RefreshPreview();
+        SetTool(BuildTool.Move);
     }
 
     private void OnUndoPerformed(InputAction.CallbackContext _)
@@ -341,24 +345,24 @@ public sealed class BuildController : MonoBehaviour
 
     private void ToggleTool()
     {
-        if (state.PlaceTool == BuildTool.Single)
+        switch (state.PlaceTool)
         {
-            state.PlaceTool = BuildTool.Line;
-            state.CancelLine();
-            app?.CancelMove();
-            return;
-        }
+            case BuildTool.Single:
+                SetTool(BuildTool.Line);
+                break;
 
-        if (state.PlaceTool == BuildTool.Line)
-        {
-            state.PlaceTool = BuildTool.Single;
-            state.CancelLine();
-            app?.CancelMove();
-            return;
-        }
+            case BuildTool.Line:
+                SetTool(BuildTool.Move);
+                break;
 
-        state.PlaceTool = BuildTool.Single;
-        app?.CancelMove();
+            case BuildTool.Move:
+                SetTool(BuildTool.Single);
+                break;
+
+            default:
+                SetTool(BuildTool.Single);
+                break;
+        }
     }
 
     private void NotifySelectionChanged()

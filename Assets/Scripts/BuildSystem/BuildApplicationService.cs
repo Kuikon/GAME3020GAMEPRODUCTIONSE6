@@ -292,7 +292,7 @@ public sealed class BuildApplicationService
             RefreshPreview();
             return false;
         }
-
+        state.PlaceTool = BuildTool.Move;
         RefreshPreview();
         return true;
     }
