@@ -31,7 +31,9 @@ public class RobotControllerCommander : MonoBehaviour
 
     [Header("Death")]
     public string deathTriggerName = "Die";
+    [SerializeField] private string airSpawnTriggerName = "AirSpawn";
     [SerializeField] private float respawnDelay = 1.2f;
+    [SerializeField] private float airSpawnRecoverDelay = 0.5f;
     private bool isDead;
     [Header("Drone Respawn")]
     [SerializeField] private DroneRespawnCarrier respawnDrone;
@@ -178,7 +180,15 @@ public class RobotControllerCommander : MonoBehaviour
 
         respawnRoutine = StartCoroutine(CoRespawn());
     }
+    public void PlayAirSpawnAnimation()
+    {
+        if (animator == null)
+            return;
 
+        animator.ResetTrigger(deathTriggerName);
+        animator.ResetTrigger(airSpawnTriggerName);
+        animator.SetTrigger(airSpawnTriggerName);
+    }
     private IEnumerator CoRespawn()
     {
         yield return new WaitForSeconds(respawnDelay);
@@ -199,8 +209,9 @@ public class RobotControllerCommander : MonoBehaviour
         }
         else if (runtimeCoordinator != null)
         {
-            // fallback: old teleport respawn
             runtimeCoordinator.MovePlayerToStart();
+            PlayAirSpawnAnimation();
+            yield return new WaitForSeconds(airSpawnRecoverDelay);
         }
         else
         {
@@ -225,12 +236,6 @@ public class RobotControllerCommander : MonoBehaviour
 
         StopImmediately();
         SetInputEnabled(true);
-
-        if (animator != null)
-        {
-            animator.ResetTrigger(deathTriggerName);
-            animator.Update(0f);
-        }
     }
 
 

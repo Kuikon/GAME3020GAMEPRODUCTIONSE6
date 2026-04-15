@@ -150,16 +150,18 @@ public class DroneRespawnCarrier : MonoBehaviour
         Transform anchor = carryAnchor != null ? carryAnchor : transform;
         robot.transform.SetParent(anchor, true);
         robot.transform.localPosition = carryOffset;
-
         // 3) Fly to respawn point
         Vector3 dropHoverWorld = respawnWorldPos + dropHoverOffset;
         yield return MoveDroneTo(dropHoverWorld);
 
+        // drone arrived above start block -> switch animation here
+        robot.PlayAirSpawnAnimation();
+
+        yield return new WaitForSeconds(dropPause);
+
         // 4) Drop robot at respawn point
         robot.transform.SetParent(null, true);
         robot.transform.position = respawnWorldPos;
-
-        yield return new WaitForSeconds(dropPause);
 
         foreach (var col in robotColliders)
         {
