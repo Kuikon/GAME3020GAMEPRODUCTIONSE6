@@ -42,7 +42,7 @@ MonoBehaviour:
     <Category>k__BackingField: 4
     <SpecialType>k__BackingField: 1
     <Prefab>k__BackingField: {fileID: 8986416493928728895, guid: b8cb46852cf00f64cb1e160e179c4b4b, type: 3}
-    bluePrefab: {fileID: 0}
+    bluePrefab: {fileID: 8986416493928728895, guid: b8cb46852cf00f64cb1e160e179c4b4b, type: 3}
     redPrefab: {fileID: 0}
     yellowPrefab: {fileID: 0}
     greenPrefab: {fileID: 0}

@@ -80,10 +80,13 @@ public class PaletteGroupItemUI : MonoBehaviour
         if (data == null)
             return result;
 
-        if (data.HasColorVariant(BlockColor.Blue)) result.Add(BlockColor.Blue);
-        if (data.HasColorVariant(BlockColor.Red)) result.Add(BlockColor.Red);
-        if (data.HasColorVariant(BlockColor.Yellow)) result.Add(BlockColor.Yellow);
-        if (data.HasColorVariant(BlockColor.Green)) result.Add(BlockColor.Green);
+        if (data.HasExactColorVariant(BlockColor.Blue)) result.Add(BlockColor.Blue);
+        if (data.HasExactColorVariant(BlockColor.Red)) result.Add(BlockColor.Red);
+        if (data.HasExactColorVariant(BlockColor.Yellow)) result.Add(BlockColor.Yellow);
+        if (data.HasExactColorVariant(BlockColor.Green)) result.Add(BlockColor.Green);
+
+        if (result.Count == 0 && data.Prefab != null)
+            result.Add(BlockColor.Blue);
 
         return result;
     }
