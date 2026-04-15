@@ -271,8 +271,7 @@ public class BuildPaletteUI : MonoBehaviour
         if (buildController == null)
             return;
 
-        buildController.SetSelectedObject(SelectedObjectID);
-        buildController.SetSelectedColor(SelectedColor);
+        buildController.SetSelection(SelectedObjectID, SelectedColor);
     }
 
     private void HandleSelectionChanged(int objectID, BlockColor color)

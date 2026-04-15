@@ -138,7 +138,18 @@ public sealed class BuildController : MonoBehaviour
 
         app.TickPreview();
     }
+    public void SetSelection(int objectId, BlockColor color)
+    {
+        state.SelectedObjectID = objectId;
+        SelectedColor = color;
+        state.SetSelectedColor(color);
 
+        app?.RefreshPreview();
+        NotifySelectionChanged();
+
+        if (debugLogs)
+            Debug.Log($"[BuildController] Selection = ObjectID:{objectId}, Color:{color}");
+    }
     public void SetSelectedObject(int objectId)
     {
         state.SelectedObjectID = objectId;
