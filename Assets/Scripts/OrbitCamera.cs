@@ -88,15 +88,20 @@ public class OrbitCamera : MonoBehaviour
             lookAction.action.Disable();
     }
 
-    public void EnableCinematicOverride(bool enabled)
+    public void MoveToGoalShot(Vector3 worldPosition, Vector3 lookTarget, bool snapImmediately = false)
     {
-        cinematicOverrideActive = enabled;
-    }
+        Vector3 forward = lookTarget - worldPosition;
 
-    public void SetCinematicPose(Vector3 worldPosition, Quaternion worldRotation, bool snapImmediately = false)
-    {
+        if (forward.sqrMagnitude < 0.0001f)
+            forward = DrivenTransform.forward;
+        else
+            forward.Normalize();
+
         cinematicPosition = worldPosition;
-        cinematicRotation = worldRotation;
+        cinematicRotation = Quaternion.LookRotation(forward, Vector3.up);
+        cinematicOverrideActive = true;
+
+        SetInputEnabled(false);
 
         if (snapImmediately)
         {
@@ -105,9 +110,12 @@ public class OrbitCamera : MonoBehaviour
         }
     }
 
-    public void ClearCinematicOverride()
+    public void ClearGoalShot(bool enableInput = true)
     {
         cinematicOverrideActive = false;
+
+        if (enableInput)
+            SetInputEnabled(true);
     }
 
     private void LateUpdate()

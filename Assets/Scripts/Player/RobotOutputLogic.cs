@@ -13,7 +13,6 @@ public sealed class RobotOutputLogic
         //PlayFootstepSound(ctx);
         PlayDashSound(ctx);
         UpdateAnimator(ctx);
-        ctx.WasGrounded = ctx.IsGrounded;
     }
 
     private void ApplyHorizontalMovement(RobotContext ctx)

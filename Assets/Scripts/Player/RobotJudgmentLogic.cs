@@ -15,10 +15,8 @@ public sealed class RobotJudgmentLogic
          
         Transform t = ctx.GroundCheckSphere.transform;
 
-        // SphereCollider の中心をワールド座標に変換
         Vector3 worldCenter = t.TransformPoint(ctx.GroundCheckSphere.center);
 
-        // scale を考慮した半径
         float scale = Mathf.Max(t.lossyScale.x, t.lossyScale.z);
         float worldRadius = ctx.GroundCheckSphere.radius * scale;
 

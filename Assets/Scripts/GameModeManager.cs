@@ -25,11 +25,13 @@ public class GameModeManager : MonoBehaviour
 
     [Header("Edit Camera")]
     [SerializeField] private Camera editCamera;
-    [SerializeField] private FreeFlyCamera editFly;
 
     [Header("Start")]
     [SerializeField] private bool disableCameraLookInEdit = true;
 
+    [Header("UI")]
+    [SerializeField] private GameObject normalUIRoot; 
+    [SerializeField] private GameObject backButton;  
     [Header("Placed Objects")]
     [SerializeField] private ObjectsDatabaseSO database;
     [SerializeField] private Transform placedRoot;
@@ -142,15 +144,17 @@ public class GameModeManager : MonoBehaviour
         if (editCamera != null)
             editCamera.gameObject.SetActive(!isPlay);
 
-        if (editFly != null)
-            editFly.SetInputEnabled(!isPlay);
-
         Cursor.visible = !isPlay;
         Cursor.lockState = isPlay ? CursorLockMode.Locked : CursorLockMode.None;
         if (buildController is BuildController bc)
         {
             bc.CancelCurrentOperation(); // clears preview + drone
         }
+        if (normalUIRoot != null)
+            normalUIRoot.SetActive(!isPlay);
+
+        if (backButton != null)
+            backButton.SetActive(true);
         if (debugLogs)
         {
             Debug.Log($"[GameModeManager] Mode = {mode}");

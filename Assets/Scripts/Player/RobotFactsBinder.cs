@@ -17,7 +17,8 @@ public sealed class RobotFactsBinder
 
         ctx.Rb = c.GetComponent<Rigidbody>();
         ctx.Capsule = c.GetComponent<CapsuleCollider>();
-        ctx.GroundCheckSphere = c.GetComponentInChildren<SphereCollider>();
+        ctx.GroundCheckSphere = c.groundCheckSphere;
+        ctx.GroundLayer = c.groundLayer;
         ctx.Rb.freezeRotation = true;
     }
 
@@ -37,10 +38,6 @@ public sealed class RobotFactsBinder
         ctx.LowJumpGravityMultiplier = c.lowJumpGravityMultiplier;
 
         ctx.ConveyorStickTime = c.conveyorStickTime;
-
-        ctx.GroundLayer = c.groundLayer;
-        ctx.GroundCheckDistance = c.groundCheckDistance;
-        ctx.GroundCheckRadius = c.groundCheckRadius;
     }
 
     private void BindInput(RobotContext ctx, RobotControllerCommander c)

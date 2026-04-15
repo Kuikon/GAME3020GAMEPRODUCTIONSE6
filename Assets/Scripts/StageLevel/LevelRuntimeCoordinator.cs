@@ -23,17 +23,21 @@ public class LevelRuntimeCoordinator : MonoBehaviour
     [SerializeField] private string robotWaveTrigger = "Wave";
     [SerializeField] private string boyVictoryTrigger = "Victory";
     [SerializeField] private float beforeWaveDelay = 0.1f;
-    [SerializeField] private float beforeVictoryDelay = 0.35f;
+    [SerializeField] private float beforeMoveToVictoryCameraDelay = 0.5f;
+    [SerializeField] private float beforeVictoryDelay = 0.2f;
     [SerializeField] private float beforeReturnToEditDelay = 1.2f;
-    [SerializeField] private bool makeRobotFaceBoy = true;
-    [SerializeField] private bool makeBoyFaceRobot = true;
 
-    [Header("Goal Camera")]
-    [SerializeField] private bool useGoalCameraShot = true;
-    [SerializeField] private float cameraBehindRobotDistance = 2.5f;
-    [SerializeField] private float cameraHeightOffset = 1.25f;
-    [SerializeField] private float cameraLookAtHeight = 1.0f;
-    [SerializeField] private bool snapGoalCameraImmediately = true;
+    [Header("Wave Camera")]
+    [SerializeField] private float waveCameraDistance = 1.8f;
+    [SerializeField] private float waveCameraHeight = 1.4f;
+    [SerializeField] private Vector3 waveLookOffset = new Vector3(0f, 1.2f, 0f);
+    [SerializeField] private float robotFaceCameraEyeHeight = 1.2f;
+    [SerializeField] private bool snapWaveCameraImmediately = true;
+
+    [Header("Victory Camera")]
+    [SerializeField] private Transform boyVictoryCameraPoint;
+    [SerializeField] private Vector3 boyVictoryLookOffset = new Vector3(0f, 1.2f, 0f);
+    [SerializeField] private bool snapVictoryCameraImmediately = true;
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
@@ -86,11 +90,6 @@ public class LevelRuntimeCoordinator : MonoBehaviour
 
         goalSequenceRunning = false;
 
-        if (orbitCamera != null)
-        {
-            orbitCamera.ClearCinematicOverride();
-        }
-
         if (!MovePlayerToStart())
             return false;
 
@@ -102,10 +101,17 @@ public class LevelRuntimeCoordinator : MonoBehaviour
     {
         if (orbitCamera != null)
         {
-            orbitCamera.ClearCinematicOverride();
+            orbitCamera.ClearGoalShot();
+            orbitCamera.SetInputEnabled(true);
         }
 
         MovePlayerToStart();
+
+        if (boyMover != null)
+        {
+            boyMover.SetInputEnabled(true);
+        }
+
         modeManager?.ForceModeEdit();
     }
 
@@ -115,11 +121,16 @@ public class LevelRuntimeCoordinator : MonoBehaviour
             return;
 
         goalSequenceRunning = true;
+
+        if (debugLogs)
+            Debug.Log("[LevelRuntimeCoordinator] Goal reached. Start goal sequence.");
+
         StartCoroutine(CoHandleGoalReached());
     }
 
     private IEnumerator CoHandleGoalReached()
     {
+        // 1. Ž~‚ß‚é
         if (robotController != null)
         {
             robotController.SetInputEnabled(false);
@@ -131,51 +142,89 @@ public class LevelRuntimeCoordinator : MonoBehaviour
             boyMover.SetInputEnabled(false);
         }
 
-        if (makeRobotFaceBoy && robotController != null && playerTransform != null)
+        if (orbitCamera != null)
         {
-            robotController.FaceTargetInstant(playerTransform);
-        }
-
-        if (makeBoyFaceRobot && playerTransform != null && robotTransform != null)
-        {
-            FaceTargetFlat(playerTransform, robotTransform.position);
-
-            if (boyMover != null)
-                boyMover.SetFacingYaw(playerTransform.eulerAngles.y);
-        }
-
-        if (useGoalCameraShot && orbitCamera != null && robotTransform != null && playerTransform != null)
-        {
-            Vector3 camPos;
-            Quaternion camRot;
-            BuildGoalCameraPose(robotTransform, playerTransform, out camPos, out camRot);
-
             orbitCamera.SetInputEnabled(false);
-            orbitCamera.EnableCinematicOverride(true);
-            orbitCamera.SetCinematicPose(camPos, camRot, snapGoalCameraImmediately);
         }
 
+        // 2.camera move to robot
+        Vector3 waveCamPos = Vector3.zero;
+
+        if (orbitCamera != null && robotTransform != null)
+        {
+            waveCamPos =
+                robotTransform.position
+                + robotTransform.forward * waveCameraDistance
+                + Vector3.up * waveCameraHeight;
+
+            Vector3 waveLookTarget = robotTransform.position + waveLookOffset;
+
+            orbitCamera.MoveToGoalShot(waveCamPos, waveLookTarget, snapWaveCameraImmediately);
+
+            if (debugLogs)
+                Debug.Log("[LevelRuntimeCoordinator] Wave camera shot activated.");
+        }
+        // 3.Robot rotate to camera
+        if (robotController != null && robotTransform != null)
+        {
+            Vector3 robotLookAt = waveCamPos;
+            robotLookAt.y = robotTransform.position.y + robotFaceCameraEyeHeight;
+
+            robotController.FaceWorldPositionInstant(robotLookAt);
+
+            if (debugLogs)
+                Debug.Log("[LevelRuntimeCoordinator] Robot turned toward camera.");
+        }
+
+        // 4. Wait
         if (beforeWaveDelay > 0f)
             yield return new WaitForSeconds(beforeWaveDelay);
 
+        // 5. Robot wave
         if (robotAnimator != null && !string.IsNullOrEmpty(robotWaveTrigger))
         {
             robotAnimator.ResetTrigger(robotWaveTrigger);
             robotAnimator.SetTrigger(robotWaveTrigger);
+
+            if (debugLogs)
+                Debug.Log("[LevelRuntimeCoordinator] Robot plays Wave.");
         }
 
+        // 6. Wait
+        if (beforeMoveToVictoryCameraDelay > 0f)
+            yield return new WaitForSeconds(beforeMoveToVictoryCameraDelay);
+
+        // 7. move to fixed camera position
+        if (orbitCamera != null && boyVictoryCameraPoint != null && playerTransform != null)
+        {
+            Vector3 camPos = boyVictoryCameraPoint.position;
+            Vector3 lookTarget = playerTransform.position + boyVictoryLookOffset;
+
+            orbitCamera.MoveToGoalShot(camPos, lookTarget, snapVictoryCameraImmediately);
+
+            if (debugLogs)
+                Debug.Log("[LevelRuntimeCoordinator] Camera moved to boy victory point.");
+        }
+
+        // 8. wait
         if (beforeVictoryDelay > 0f)
             yield return new WaitForSeconds(beforeVictoryDelay);
 
+        // 9. boy victory
         if (boyAnimator != null && !string.IsNullOrEmpty(boyVictoryTrigger))
         {
             boyAnimator.ResetTrigger(boyVictoryTrigger);
             boyAnimator.SetTrigger(boyVictoryTrigger);
+
+            if (debugLogs)
+                Debug.Log("[LevelRuntimeCoordinator] Boy plays Victory.");
         }
 
+        // 10. wait
         if (beforeReturnToEditDelay > 0f)
             yield return new WaitForSeconds(beforeReturnToEditDelay);
 
+        // 11.Go back to Edit 
         ReturnToEditFromPlay();
         goalSequenceRunning = false;
     }
@@ -249,46 +298,5 @@ public class LevelRuntimeCoordinator : MonoBehaviour
             startTopY + playerHalfHeight + spawnPadding,
             startBlock.transform.position.z
         );
-    }
-
-    private void FaceTargetFlat(Transform actor, Vector3 targetPosition)
-    {
-        if (actor == null)
-            return;
-
-        Vector3 toTarget = targetPosition - actor.position;
-        toTarget.y = 0f;
-
-        if (toTarget.sqrMagnitude < 0.0001f)
-            return;
-
-        actor.rotation = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
-    }
-
-    private void BuildGoalCameraPose(Transform robot, Transform boy, out Vector3 cameraPosition, out Quaternion cameraRotation)
-    {
-        Vector3 robotPos = robot.position;
-        Vector3 boyPos = boy.position;
-
-        Vector3 robotForward = robot.forward;
-        robotForward.y = 0f;
-
-        if (robotForward.sqrMagnitude < 0.0001f)
-            robotForward = (boyPos - robotPos).normalized;
-
-        robotForward.Normalize();
-
-        cameraPosition =
-            robotPos
-            - robotForward * cameraBehindRobotDistance
-            + Vector3.up * cameraHeightOffset;
-
-        Vector3 lookTarget = boyPos + Vector3.up * cameraLookAtHeight;
-        Vector3 lookDir = lookTarget - cameraPosition;
-
-        if (lookDir.sqrMagnitude < 0.0001f)
-            lookDir = robotForward;
-
-        cameraRotation = Quaternion.LookRotation(lookDir.normalized, Vector3.up);
     }
 }

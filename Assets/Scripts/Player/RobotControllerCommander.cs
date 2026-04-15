@@ -11,13 +11,9 @@ public class RobotControllerCommander : MonoBehaviour
 
     [Header("Input")]
     public InputActionAsset inputActions;
-
-    [Header("Ground")]
+    [Header("Ground Check")]
+    public SphereCollider groundCheckSphere;
     public LayerMask groundLayer;
-    public float groundCheckDistance = 0.08f;
-    public Transform groundPoint;
-    public float groundCheckRadius = 0.2f;
-
     [Header("Movement")]
     public float moveSpeed = 5f;
     public float runSpeed = 8f;
@@ -34,7 +30,6 @@ public class RobotControllerCommander : MonoBehaviour
     public float lowJumpGravityMultiplier = 2.5f;
 
     [Header("Death")]
-    public LayerMask deathLayer;
     public string deathTriggerName = "Die";
     [SerializeField] private float respawnDelay = 1.2f;
     private bool isDead;
@@ -121,10 +116,13 @@ public class RobotControllerCommander : MonoBehaviour
         state.Tick(ctx);
         xform.Tick(ctx);
         output.Tick(ctx);
+        ctx.JumpPressed = false;
+        ctx.JumpReleased = false;
     }
 
     private void OnJumpPerformed(InputAction.CallbackContext _)
     {
+        Debug.Log("JUMP PRESSED");
         if (isDead)
             return;
 
@@ -217,17 +215,6 @@ public class RobotControllerCommander : MonoBehaviour
         }
     }
 
-    private bool IsInLayerMask(int layer, LayerMask mask)
-    {
-        return (mask.value & (1 << layer)) != 0;
-    }
-
-    // ===== Public API =====
-    public void SetConveyorVelocity(Vector3 velocity)
-    {
-        ctx.ConveyorVelocity = velocity;
-        ctx.ConveyorTimer = ctx.ConveyorStickTime;
-    }
 
     public void SetInputEnabled(bool enabled)
     {
@@ -249,17 +236,17 @@ public class RobotControllerCommander : MonoBehaviour
             rb.angularVelocity = Vector3.zero;
         }
     }
-    public void FaceTargetInstant(Transform target)
+    public void FaceWorldPositionInstant(Vector3 worldPosition)
     {
-        if (target == null)
+        if (transform == null)
             return;
 
-        Vector3 toTarget = target.position - transform.position;
+        Vector3 toTarget = worldPosition - transform.position;
+
         toTarget.y = 0f;
 
         if (toTarget.sqrMagnitude < 0.0001f)
             return;
-
         transform.rotation = Quaternion.LookRotation(toTarget.normalized, Vector3.up);
     }
 }
