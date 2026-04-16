@@ -70,7 +70,7 @@ MonoBehaviour:
     greenPrefab: {fileID: 2333274547571807430, guid: 576a194a86e35b343ad3ddcccae54081, type: 3}
   - <Name>k__BackingField: Platform(L)
     <ID>k__BackingField: 5
-    <SizeXYZ>k__BackingField: {x: 4, y: 2, z: 4}
+    <SizeXYZ>k__BackingField: {x: 4, y: 4, z: 4}
     <IsBoxShape>k__BackingField: 1
     <Category>k__BackingField: 1
     <SpecialType>k__BackingField: 0
@@ -142,9 +142,9 @@ MonoBehaviour:
     <SpecialType>k__BackingField: 0
     <Prefab>k__BackingField: {fileID: 5264273733790164958, guid: c91bf965e86511643bbaf62d62cbcef8, type: 3}
     bluePrefab: {fileID: 5264273733790164958, guid: c91bf965e86511643bbaf62d62cbcef8, type: 3}
-    redPrefab: {fileID: 130484330011567294, guid: 1d9f5be919312ec4f8dc9bf57afa4eaf, type: 3}
-    yellowPrefab: {fileID: 4989103182476292860, guid: 027d8f8a7a907ba40ad4bc8adbaf2fa4, type: 3}
-    greenPrefab: {fileID: 7306698267450080689, guid: eede43c330b34ea468f31e4e9cb0542e, type: 3}
+    redPrefab: {fileID: 3388112391057934264, guid: 9015d87c9b1d7404e9735bdcf8949994, type: 3}
+    yellowPrefab: {fileID: 3952842379026997060, guid: df69be961ac6f2f408791a9cb016a3c3, type: 3}
+    greenPrefab: {fileID: 7664195068374444903, guid: 4968c35cf0ef22a449e771e9d9e2701d, type: 3}
   - <Name>k__BackingField: Slope (L)
     <ID>k__BackingField: 12
     <SizeXYZ>k__BackingField: {x: 4, y: 4, z: 4}
@@ -153,9 +153,9 @@ MonoBehaviour:
     <SpecialType>k__BackingField: 0
     <Prefab>k__BackingField: {fileID: 4651573321611481998, guid: 31f9a291ac7561d41af96ddf50749959, type: 3}
     bluePrefab: {fileID: 4651573321611481998, guid: 31f9a291ac7561d41af96ddf50749959, type: 3}
-    redPrefab: {fileID: 130484330011567294, guid: 1d9f5be919312ec4f8dc9bf57afa4eaf, type: 3}
-    yellowPrefab: {fileID: 4989103182476292860, guid: 027d8f8a7a907ba40ad4bc8adbaf2fa4, type: 3}
-    greenPrefab: {fileID: 7306698267450080689, guid: eede43c330b34ea468f31e4e9cb0542e, type: 3}
+    redPrefab: {fileID: 6361720889400393169, guid: d54109ee5be99de45a0fd440cf2c9551, type: 3}
+    yellowPrefab: {fileID: 7909326071623713126, guid: fef9ee3707460d14da243c87ab239691, type: 3}
+    greenPrefab: {fileID: 6583631145066285076, guid: edbb74370f35f0f408978f194746e33b, type: 3}
   - <Name>k__BackingField: Slope (L)
     <ID>k__BackingField: 13
     <SizeXYZ>k__BackingField: {x: 4, y: 4, z: 6}
@@ -164,11 +164,99 @@ MonoBehaviour:
     <SpecialType>k__BackingField: 0
     <Prefab>k__BackingField: {fileID: 3443158107064819249, guid: e9e17639013163a4480c22d4c392e235, type: 3}
     bluePrefab: {fileID: 3443158107064819249, guid: e9e17639013163a4480c22d4c392e235, type: 3}
-    redPrefab: {fileID: 130484330011567294, guid: 1d9f5be919312ec4f8dc9bf57afa4eaf, type: 3}
+    redPrefab: {fileID: 58538297722111819, guid: 815836e48a56f4c4db364bbb2eafeb62, type: 3}
     yellowPrefab: {fileID: 4989103182476292860, guid: 027d8f8a7a907ba40ad4bc8adbaf2fa4, type: 3}
-    greenPrefab: {fileID: 7306698267450080689, guid: eede43c330b34ea468f31e4e9cb0542e, type: 3}
-  - <Name>k__BackingField: Goal
+    greenPrefab: {fileID: 5079644822027495746, guid: 660136336a5fe094a9f7b9e0eee05238, type: 3}
+  - <Name>k__BackingField: Safety Net(S)
     <ID>k__BackingField: 14
+    <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 2}
+    <IsBoxShape>k__BackingField: 0
+    <Category>k__BackingField: 3
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 263299517560026929, guid: d5b9a0af36666c342b6519dda66ec54e, type: 3}
+    bluePrefab: {fileID: 263299517560026929, guid: d5b9a0af36666c342b6519dda66ec54e, type: 3}
+    redPrefab: {fileID: 399720516373499132, guid: 2b9f88f28b783b84f8dc3ea493896aa9, type: 3}
+    yellowPrefab: {fileID: 1079639949140169402, guid: 19dd766afccf2c244b45be443c889200, type: 3}
+    greenPrefab: {fileID: 8339193145702745097, guid: d3c53f5fec39b6a47907ae2f1ad159d7, type: 3}
+  - <Name>k__BackingField: Safety Net(M)
+    <ID>k__BackingField: 15
+    <SizeXYZ>k__BackingField: {x: 4, y: 1, z: 2}
+    <IsBoxShape>k__BackingField: 0
+    <Category>k__BackingField: 3
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 4991343998003917890, guid: 52307772e0e15ff4e9fc8937b80ed49e, type: 3}
+    bluePrefab: {fileID: 4991343998003917890, guid: 52307772e0e15ff4e9fc8937b80ed49e, type: 3}
+    redPrefab: {fileID: 1736620922601392707, guid: 873130ffb1a8cc0418d92bd2cd869d92, type: 3}
+    yellowPrefab: {fileID: 4268026470998816609, guid: 12c037a8fbfde1c44878753e8f6bd465, type: 3}
+    greenPrefab: {fileID: 8464487817211356297, guid: 8d0a94cc0de2e584ca0e2fe1d3990f64, type: 3}
+  - <Name>k__BackingField: Safety Net(L)
+    <ID>k__BackingField: 16
+    <SizeXYZ>k__BackingField: {x: 6, y: 1, z: 2}
+    <IsBoxShape>k__BackingField: 0
+    <Category>k__BackingField: 3
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 1341602852305596362, guid: 09e125df8810de044b53d0a2aae3839d, type: 3}
+    bluePrefab: {fileID: 1341602852305596362, guid: 09e125df8810de044b53d0a2aae3839d, type: 3}
+    redPrefab: {fileID: 1108699922426427688, guid: 2a015fdd550acf64894c96b5f03862e7, type: 3}
+    yellowPrefab: {fileID: 6672920747571418365, guid: 47f3d218bbc401040ab2cf43e449deaa, type: 3}
+    greenPrefab: {fileID: 3817971869474033300, guid: 9ed719b68e6231b46908a2b3d5ddd0f3, type: 3}
+  - <Name>k__BackingField: FloorNet(S)
+    <ID>k__BackingField: 17
+    <SizeXYZ>k__BackingField: {x: 2, y: 1, z: 2}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 3
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 7816289046575704201, guid: 9f278a1603145bf43bdb879644bc9deb, type: 3}
+    bluePrefab: {fileID: 7816289046575704201, guid: 9f278a1603145bf43bdb879644bc9deb, type: 3}
+    redPrefab: {fileID: 1347105654664551349, guid: 6ef0d2a9536b7a64c9b94dd5a15e6c42, type: 3}
+    yellowPrefab: {fileID: 6242372627867609201, guid: 7021410ee9b94b347b5991ab519679af, type: 3}
+    greenPrefab: {fileID: 4132944972171355005, guid: f37a52dbdafbe7a4aa8a5bbe88f33b6e, type: 3}
+  - <Name>k__BackingField: Floor Net(L)
+    <ID>k__BackingField: 18
+    <SizeXYZ>k__BackingField: {x: 4, y: 1, z: 4}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 3
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 4039680925214042719, guid: f9c1ba0ce194e2f49bf638585020bb8e, type: 3}
+    bluePrefab: {fileID: 4039680925214042719, guid: f9c1ba0ce194e2f49bf638585020bb8e, type: 3}
+    redPrefab: {fileID: 7476679300867488034, guid: b841c323a6489fe4dbe1950974e17155, type: 3}
+    yellowPrefab: {fileID: 670840204304824496, guid: 1224f076b73818c48928a5367c6c731f, type: 3}
+    greenPrefab: {fileID: 1484572846632257746, guid: f2e8efbf09e388c40bf7b33eb359dc87, type: 3}
+  - <Name>k__BackingField: Barrier(S)
+    <ID>k__BackingField: 19
+    <SizeXYZ>k__BackingField: {x: 1, y: 2, z: 1}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 3
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 6053259059836644952, guid: 38da89c72fe9f9842ba92062492c2095, type: 3}
+    bluePrefab: {fileID: 6053259059836644952, guid: 38da89c72fe9f9842ba92062492c2095, type: 3}
+    redPrefab: {fileID: 0}
+    yellowPrefab: {fileID: 0}
+    greenPrefab: {fileID: 0}
+  - <Name>k__BackingField: Barrier(M)
+    <ID>k__BackingField: 20
+    <SizeXYZ>k__BackingField: {x: 2, y: 2, z: 1}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 3
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 6552546593230350319, guid: 216b73dab439fd54bb10c245774470c3, type: 3}
+    bluePrefab: {fileID: 6552546593230350319, guid: 216b73dab439fd54bb10c245774470c3, type: 3}
+    redPrefab: {fileID: 0}
+    yellowPrefab: {fileID: 0}
+    greenPrefab: {fileID: 0}
+  - <Name>k__BackingField: Barrier(L)
+    <ID>k__BackingField: 21
+    <SizeXYZ>k__BackingField: {x: 4, y: 2, z: 1}
+    <IsBoxShape>k__BackingField: 1
+    <Category>k__BackingField: 3
+    <SpecialType>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 3122377314453293854, guid: 9c5d83c9d10043d45af997df56cd016a, type: 3}
+    bluePrefab: {fileID: 3122377314453293854, guid: 9c5d83c9d10043d45af997df56cd016a, type: 3}
+    redPrefab: {fileID: 0}
+    yellowPrefab: {fileID: 0}
+    greenPrefab: {fileID: 0}
+  - <Name>k__BackingField: Goal
+    <ID>k__BackingField: 25
     <SizeXYZ>k__BackingField: {x: 6, y: 7, z: 6}
     <IsBoxShape>k__BackingField: 0
     <Category>k__BackingField: 4
@@ -179,7 +267,7 @@ MonoBehaviour:
     yellowPrefab: {fileID: 0}
     greenPrefab: {fileID: 0}
   - <Name>k__BackingField: Start
-    <ID>k__BackingField: 15
+    <ID>k__BackingField: 26
     <SizeXYZ>k__BackingField: {x: 6, y: 5, z: 6}
     <IsBoxShape>k__BackingField: 0
     <Category>k__BackingField: 4

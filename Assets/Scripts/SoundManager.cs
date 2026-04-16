@@ -149,8 +149,8 @@ public class BGMSoundData
     public enum BGM
     {
         Title,
-        Dungeon,
-        Hoge,
+        StageSelect,
+        Game,
     }
 
     public BGM bgm;

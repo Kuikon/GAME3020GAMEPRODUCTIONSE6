@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 2806908246614405523}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -136,6 +136,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlockInstance
   <ObjectID>k__BackingField: 0
+  <Color>k__BackingField: 1
 --- !u!1 &8724312385408638118
 GameObject:
   m_ObjectHideFlags: 0
@@ -190,7 +191,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 1
   m_CookingOptions: -1
-  m_Mesh: {fileID: 5911469719756692885, guid: 8dda3b1db6bf9d64e85da5f30f568141, type: 3}
+  m_Mesh: {fileID: 8421212117281230007, guid: 7d2456e0914ff054cb2f83725a1a0794, type: 3}
 --- !u!65 &2345701640075645961
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -211,4 +212,4 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 4, y: 1, z: 2}
-  m_Center: {x: 0, y: 0.5, z: 0}
+  m_Center: {x: 0, y: 1, z: 0}

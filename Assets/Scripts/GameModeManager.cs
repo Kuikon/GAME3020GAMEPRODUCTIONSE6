@@ -63,6 +63,7 @@ public class GameModeManager : MonoBehaviour
 
         if (runtimeCoordinator == null)
             runtimeCoordinator = FindFirstObjectByType<LevelRuntimeCoordinator>();
+        SoundManager.Instance.PlayBGM(BGMSoundData.BGM.Game);
     }
 
     private void OnEnable()

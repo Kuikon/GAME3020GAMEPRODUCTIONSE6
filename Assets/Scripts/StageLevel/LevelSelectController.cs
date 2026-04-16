@@ -38,6 +38,7 @@ public class LevelSelectController : MonoBehaviour
     private void Awake()
     {
         db = new LevelDB();
+        SoundManager.Instance.PlayBGM(BGMSoundData.BGM.StageSelect);
     }
 
     private void Start()
